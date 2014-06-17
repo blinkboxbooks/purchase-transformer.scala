@@ -3,23 +3,30 @@ package com.blinkbox.books.purchasetransformer
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
-import akka.testkit.TestKit
+import akka.actor.Status.Failure
+import akka.actor.Status.Success
 import akka.testkit.ImplicitSender
-import org.junit.runner.RunWith
-import org.mockito.Mockito._
-import org.mockito.Matchers._
-import org.mockito.Matchers.{ eq => matcherEq }
-import org.mockito.ArgumentCaptor
-import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuiteLike
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.mock.MockitoSugar
-import scala.concurrent.Future
+import akka.testkit.TestKit
 import com.blinkbox.books.hermes.common.Common._
 import com.blinkbox.books.hermes.common.ErrorHandler
 import com.blinkbox.books.hermes.common.MessageSender
 import com.blinkboxbooks.hermes.rabbitmq.Message
-import org.xml.sax.SAXException
+import java.io.IOException
+import org.junit.runner.RunWith
+import org.mockito.ArgumentCaptor
+import org.mockito.Matchers._
+import org.mockito.Matchers.{ eq => matcherEq }
+import org.mockito.Mockito._
+import org.xml.sax.SAXParseException
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FunSuiteLike
+import org.scalatest.mock.MockitoSugar
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.xml.Elem
+import scala.xml.XML
+import scala.xml.Utility.trim
 
 /**
  * Tests that check the behaviour of the overall app, only mocking out RabbitMQ and external web services.
@@ -37,9 +44,10 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   private var handler: ActorRef = _
 
   before {
-    errorHandler = mock[ErrorHandler]
-    messageSender = mock[MessageSender]
     bookDao = mock[BookDao]
+    messageSender = mock[MessageSender]
+    errorHandler = mock[ErrorHandler]
+    doReturn(Future.successful(())).when(errorHandler).handleError(any[Message], any[Throwable])
 
     handler = emailHandler
   }
@@ -52,29 +60,54 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     val books = isbns(1, 2)
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
-    handler ! message(testMessage(2, 2, true).toString)
-    expectNoMsg
+    within(500.millis) {
+      handler ! message(testMessage(2, 2, true).toString)
+      expectMsgType[Success]
+    }
 
     verify(bookDao).getBooks(books)
     val argument = ArgumentCaptor.forClass(classOf[Message])
     verify(messageSender).send(argument.capture)
     val content = new String(argument.getValue.body, "UTF-8")
-    assert(content == expectedEmailMessage(2, 2, true))
+    assert(xml(content) == expectedEmailMessage(2, 2, true))
 
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
+
+  private def xml(str: String) = trim(XML.loadString(str))
 
   test("Send message without optional fields") {
     val books = isbns(1)
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
-    handler ! message(testMessage(1, 1, false).toString)
-    expectNoMsg
+    within(500.millis) {
+      handler ! message(testMessage(1, 1, false).toString)
+      expectMsgType[Success]
+    }
 
     val argument = ArgumentCaptor.forClass(classOf[Message])
     verify(messageSender).send(argument.capture)
     val content = new String(argument.getValue.body, "UTF-8")
-    assert(content == expectedEmailMessage(1, 1, false))
+    assert(xml(content) == expectedEmailMessage(1, 1, false))
+
+    verifyNoMoreInteractions(errorHandler, messageSender)
+  }
+
+  test("Book with no authors") {
+    val ids = isbns(1)
+    val books = BookList(0, ids.size, ids.size,
+      ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", "TODO: dateStr", List())).toList)
+    doReturn(Future.successful(books)).when(bookDao).getBooks(ids)
+
+    within(500.millis) {
+      handler ! message(testMessage(1, 1, true).toString)
+      expectMsgType[Success]
+    }
+
+    val argument = ArgumentCaptor.forClass(classOf[Message])
+    verify(messageSender).send(argument.capture)
+    val content = new String(argument.getValue.body, "UTF-8")
+    assert(xml(content) == expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
 
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
@@ -85,61 +118,117 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
 
   test("non-well-formed XML input") {
     val msg = message("Not valid XML")
-    handler ! msg
-    expectNoMsg
+
+    within(500.millis) {
+      handler ! msg
+      expectMsgType[Success]
+    }
 
     val error = ArgumentCaptor.forClass(classOf[Exception])
     verify(errorHandler).handleError(matcherEq(msg), error.capture)
-    assert(error.getValue.isInstanceOf[SAXException])
+    assert(error.getValue.isInstanceOf[SAXParseException])
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
   test("Well-formed XML that fails in conversion") {
     val msg = message("<p:purchase><invalid>Not the expeced content</invalid></p:purchase>")
-    handler ! msg
-    expectNoMsg
+
+    within(500.millis) {
+      handler ! msg
+      expectMsgType[Success]
+    }
 
     val error = ArgumentCaptor.forClass(classOf[Exception])
     verify(errorHandler).handleError(matcherEq(msg), error.capture)
-    assert(error.getValue.isInstanceOf[SAXException])
+    assert(error.getValue.isInstanceOf[IllegalArgumentException])
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
   test("Message with no books") {
-    fail("TODO")
+    doReturn(Future.successful(bookList(List()))).when(bookDao).getBooks(any[Seq[String]])
+
+    val msg = message(testMessage(0, 1, false).toString)
+
+    within(500.millis) {
+      handler ! msg
+      expectMsgType[Success]
+    }
+
+    val error = ArgumentCaptor.forClass(classOf[IllegalArgumentException])
+    verify(errorHandler).handleError(matcherEq(msg), error.capture)
+    assert(error.getValue.isInstanceOf[IllegalArgumentException])
+    verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
-  test("Forwarding message fails with unrecoverable error") {
-    // Should ack + write to error handler.
-    fail("TODO")
+  test("Process fails with temporary error, then recovers") {
+    val books = isbns(1)
+    val temporaryError = new IOException("Test temporary failure")
+
+    // Fail twice then succeed.
+    when(bookDao.getBooks(books))
+      .thenReturn(Future.failed(temporaryError))
+      .thenReturn(Future.failed(temporaryError))
+      .thenReturn(Future.successful(bookList(books)))
+
+    within(retryInterval * 3 + 500.millis) {
+      handler ! message(testMessage(1, 2, true).toString)
+      expectMsgType[Success]
+    }
+
+    val argument = ArgumentCaptor.forClass(classOf[Message])
+    verify(messageSender).send(argument.capture)
+    val content = new String(argument.getValue.body, "UTF-8")
+    assert(xml(content) == expectedEmailMessage(1, 2, true))
+
+    verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
-  test("Forwarding message fails with temporary error") {
-    // Should schedule message to be retried.
-    // Or go through cycle of retries followed by final success/failure?
-    fail("TODO")
-  }
+  test("Error handler failure to deal with message") {
+    val books = isbns(1)
+    val ex = new IOException("Test failure from error handler")
 
-  test("Acking message fails") {
-    fail("TODO")
+    doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
+
+    // Make error handler fail twice then succeed.
+    when(errorHandler.handleError(any[Message], any[Throwable]))
+      .thenReturn(Future.failed(ex))
+      .thenReturn(Future.failed(ex))
+      .thenReturn(Future.successful(()))
+
+    within(retryInterval * 3 + 500.millis) {
+      handler ! message(testMessage(1, 2, true).toString)
+      expectMsgType[Success]
+    }
+
+    val argument = ArgumentCaptor.forClass(classOf[Message])
+    verify(messageSender).send(argument.capture)
+    val content = new String(argument.getValue.body, "UTF-8")
+    assert(xml(content) == expectedEmailMessage(1, 2, true))
+
+    verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
   private def emailHandler = system.actorOf(Props(
-    new EmailMessageHandler(bookDao, messageSender, errorHandler, routingId, templateName)))
+    new EmailMessageHandler(bookDao, messageSender, errorHandler, routingId, templateName, retryInterval)))
 
 }
 
 object EmailMessageHandlerTests {
 
+  // Constants for test.
   val routingId = "test-routing-id"
-  val templateName = "test-template"
-
+  val templateName = "testTemplate"
+  val retryInterval = 100.millis
   val BASE_ISBN = 122344566780L
+  val authors = List("Author 1", "Author 2", "Author 3")
 
+  // Some helper methods for test data.
   def isbn(id: Int) = 122344566780L + id
   def isbns(ids: Int*) = ids.map(isbn(_).toString).toList
-  def bookList(ids: Seq[String]) = BookList(0, 0, 0, List()) // TODO
-  def author(isbn: String) = "TODO" // TODO!
+  def author(isbn: String) = authors((isbn.toLong - BASE_ISBN - 1).toInt)
+  def authorLink(isbn: String) = Link("", "", None, author(isbn))
+  def bookList(ids: Seq[String]) = BookList(0, ids.size, ids.size,
+    ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", "TODO: dateStr", List(authorLink(isbn)))).toList)
 
   def message(content: String) = Message("consumer-tag", null, null, content.getBytes("UTF-8"))
 
@@ -197,40 +286,41 @@ object EmailMessageHandlerTests {
       </basketItems>
     </p:purchase>
 
-  def expectedEmailMessage(numBooks: Int, numBillingProviders: Int, clubcardPoints: Boolean = true) = {
-    val isbns = (1 to numBooks).map(_.toString)
+  def expectedEmailMessage(numBooks: Int, numBillingProviders: Int, clubcardPoints: Boolean = true, knownAuthor: Boolean = true) = {
+    val isbns = (1 to numBooks).map(isbn(_).toString)
 
     // NOTE: The email messages only support a single book at the moment - so that's what we have to provide.
     val book = bookList(isbns).items(0)
+    val xml =
+      <sendEmail r:messageId="testTemplate-101-1001" r:instance={ routingId } r:originator="bookStore" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1" xmlns:r="http://schemas.blinkbox.com/books/routing/v1">
+        <template>{ templateName }</template>
+        <to>
+          <recipient>
+            <name>FirstName</name>
+            <email>email@blinkbox.com</email>
+          </recipient>
+        </to>
+        <templateVariables>
+          <templateVariable>
+            <key>salutation</key>
+            <value>FirstName</value>
+          </templateVariable>
+          <templateVariable>
+            <key>bookTitle</key>
+            <value>{ book.title }</value>
+          </templateVariable>
+          <templateVariable>
+            <key>author</key>
+            <value>{ if (knownAuthor) author(book.id) else "" }</value>
+          </templateVariable>
+          <templateVariable>
+            <key>price</key>
+            <value>{ (12.0 / isbns.size).toString }</value>
+          </templateVariable>
+        </templateVariables>
+      </sendEmail>
 
-    // TODO: attributes
-    <sendEmail r:messageId="receipt-76-424056" r:instance="{routingId}" r:originator="bookStore" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1" xmlns:r="http://schemas.blinkbox.com/books/routing/v1">
-      <template>{ templateName }</template>
-      <to>
-        <recipient>
-          <name>First</name>
-          <email>email@blinkbox.com</email>
-        </recipient>
-      </to>
-      <templateVariables>
-        <templateVariable>
-          <key>salutation</key>
-          <value>First</value>
-        </templateVariable>
-        <templateVariable>
-          <key>bookTitle</key>
-          <value>{ book.title }</value>
-        </templateVariable>
-        <templateVariable>
-          <key>author</key>
-          <value>{ author(book.id) } </value>
-        </templateVariable>
-        <templateVariable>
-          <key>price</key>
-          <value>12.0</value>
-        </templateVariable>
-      </templateVariables>
-    </sendEmail>
+    trim(xml)
   }
 
 }

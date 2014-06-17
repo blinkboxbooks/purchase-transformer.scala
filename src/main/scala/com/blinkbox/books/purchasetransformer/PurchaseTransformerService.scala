@@ -75,11 +75,12 @@ object PurchaseTransformerService extends App with Configuration with Logging {
   val connection = Connections.create(factory, lyraConfig)
 
   val routingId = "TODO" // TODO: Get from properties.
-  val templateName = "TODO" // TODO: Get from properties. 
+  val templateName = "TODO" // TODO: Get from properties.
+  val retryInterval = 10.seconds // TODO: Get from properties.
 
   // Create actors for email messages.
   val emailMessageHandler = system.actorOf(Props(
-    new EmailMessageHandler(bookDao, emailMessageSender, emailMsgErrorHandler, routingId, templateName)))
+    new EmailMessageHandler(bookDao, emailMessageSender, emailMsgErrorHandler, routingId, templateName, retryInterval)))
   val emailMessageReceiver = system.actorOf(Props(AmqpConsumerActor(connection.createChannel, emailMessageHandler,
     messagesForEmailQueueName, None, amqpTimeout, None, "email-msg-consumer", prefetchCount)))
 
