@@ -17,7 +17,6 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Matchers.{ eq => matcherEq }
 import org.mockito.Mockito._
-import org.xml.sax.SAXParseException
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuiteLike
@@ -27,6 +26,9 @@ import scala.concurrent.duration._
 import scala.xml.Elem
 import scala.xml.XML
 import scala.xml.Utility.trim
+import org.xml.sax.SAXParseException
+import scala.xml.Node
+import scala.reflect.runtime.universe._
 
 /**
  * Tests that check the behaviour of the overall app, only mocking out RabbitMQ and external web services.
@@ -48,7 +50,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     messageSender = mock[MessageSender]
     errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Message], any[Throwable])
-
+    
     handler = emailHandler
   }
 
@@ -66,15 +68,10 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     }
 
     verify(bookDao).getBooks(books)
-    val argument = ArgumentCaptor.forClass(classOf[Message])
-    verify(messageSender).send(argument.capture)
-    val content = new String(argument.getValue.body, "UTF-8")
-    assert(xml(content) == expectedEmailMessage(2, 2, true))
+    checkSentMessage(expectedEmailMessage(2, 2, true))
 
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
-
-  private def xml(str: String) = trim(XML.loadString(str))
 
   test("Send message without optional fields") {
     val books = isbns(1)
@@ -85,11 +82,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
     }
 
-    val argument = ArgumentCaptor.forClass(classOf[Message])
-    verify(messageSender).send(argument.capture)
-    val content = new String(argument.getValue.body, "UTF-8")
-    assert(xml(content) == expectedEmailMessage(1, 1, false))
-
+    checkSentMessage(expectedEmailMessage(1, 1, false))
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
@@ -104,11 +97,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
     }
 
-    val argument = ArgumentCaptor.forClass(classOf[Message])
-    verify(messageSender).send(argument.capture)
-    val content = new String(argument.getValue.body, "UTF-8")
-    assert(xml(content) == expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
-
+    checkSentMessage(expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
@@ -124,23 +113,19 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
     }
 
-    val error = ArgumentCaptor.forClass(classOf[Exception])
-    verify(errorHandler).handleError(matcherEq(msg), error.capture)
-    assert(error.getValue.isInstanceOf[SAXParseException])
+    checkRecordedError[SAXParseException](msg)
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
   test("Well-formed XML that fails in conversion") {
-    val msg = message("<p:purchase><invalid>Not the expeced content</invalid></p:purchase>")
+    val msg = message("<p:purchase><invalid>Not the expected content</invalid></p:purchase>")
 
     within(500.millis) {
       handler ! msg
       expectMsgType[Success]
     }
 
-    val error = ArgumentCaptor.forClass(classOf[Exception])
-    verify(errorHandler).handleError(matcherEq(msg), error.capture)
-    assert(error.getValue.isInstanceOf[IllegalArgumentException])
+    checkRecordedError[IllegalArgumentException](msg)
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
@@ -154,9 +139,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
     }
 
-    val error = ArgumentCaptor.forClass(classOf[IllegalArgumentException])
-    verify(errorHandler).handleError(matcherEq(msg), error.capture)
-    assert(error.getValue.isInstanceOf[IllegalArgumentException])
+    checkRecordedError[IllegalArgumentException](msg)
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
@@ -175,11 +158,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
     }
 
-    val argument = ArgumentCaptor.forClass(classOf[Message])
-    verify(messageSender).send(argument.capture)
-    val content = new String(argument.getValue.body, "UTF-8")
-    assert(xml(content) == expectedEmailMessage(1, 2, true))
-
+    checkSentMessage(expectedEmailMessage(1, 2, true))
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
@@ -200,16 +179,26 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
     }
 
-    val argument = ArgumentCaptor.forClass(classOf[Message])
-    verify(messageSender).send(argument.capture)
-    val content = new String(argument.getValue.body, "UTF-8")
-    assert(xml(content) == expectedEmailMessage(1, 2, true))
-
+    checkSentMessage(expectedEmailMessage(1, 2, true))
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
   private def emailHandler = system.actorOf(Props(
     new EmailMessageHandler(bookDao, messageSender, errorHandler, routingId, templateName, retryInterval)))
+
+  private def checkSentMessage(expectedContent: Node) {
+    val argument = ArgumentCaptor.forClass(classOf[Message])
+    verify(messageSender).send(argument.capture)
+    val content = new String(argument.getValue.body, "UTF-8")
+    assert(xml(content) == expectedContent)
+  }
+
+  private def checkRecordedError[T <: Throwable](msg: Message)(implicit manifest: Manifest[T]): Unit = {
+    val expectedExceptionClass = manifest.erasure.asInstanceOf[Class[T]]
+    val error = ArgumentCaptor.forClass(classOf[Exception])
+    verify(errorHandler).handleError(matcherEq(msg), error.capture)
+    assert(expectedExceptionClass.isAssignableFrom(error.getValue.getClass))
+  }
 
 }
 
@@ -231,6 +220,8 @@ object EmailMessageHandlerTests {
     ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", "TODO: dateStr", List(authorLink(isbn)))).toList)
 
   def message(content: String) = Message("consumer-tag", null, null, content.getBytes("UTF-8"))
+
+  def xml(str: String) = trim(XML.loadString(str))
 
   /** Create a purchase complete message based on a template. */
   def testMessage(numBooks: Int, numBillingProviders: Int,
