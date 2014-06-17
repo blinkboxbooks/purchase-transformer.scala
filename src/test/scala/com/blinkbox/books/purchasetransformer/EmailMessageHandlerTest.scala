@@ -1,15 +1,10 @@
 package com.blinkbox.books.purchasetransformer
 
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.actor.Status.Failure
-import akka.actor.Status.Success
-import akka.testkit.ImplicitSender
-import akka.testkit.TestKit
+import akka.actor.{ ActorRef, ActorSystem, Props }
+import akka.actor.Status.{ Success, Failure }
+import akka.testkit.{ ImplicitSender, TestKit }
 import com.blinkbox.books.hermes.common.Common._
-import com.blinkbox.books.hermes.common.ErrorHandler
-import com.blinkbox.books.hermes.common.MessageSender
+import com.blinkbox.books.hermes.common.{ ErrorHandler, MessageSender }
 import com.blinkboxbooks.hermes.rabbitmq.Message
 import java.io.IOException
 import org.junit.runner.RunWith
@@ -17,17 +12,15 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Matchers.{ eq => matcherEq }
 import org.mockito.Mockito._
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuiteLike
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
+import org.xml.sax.SAXParseException
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.xml.Elem
-import scala.xml.XML
+import scala.xml.{ Elem, XML, Node }
 import scala.xml.Utility.trim
-import org.xml.sax.SAXParseException
-import scala.xml.Node
 import scala.reflect.runtime.universe._
 
 /**
@@ -50,7 +43,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     messageSender = mock[MessageSender]
     errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Message], any[Throwable])
-    
+
     handler = emailHandler
   }
 
