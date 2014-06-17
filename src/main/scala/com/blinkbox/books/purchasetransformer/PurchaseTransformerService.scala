@@ -17,6 +17,8 @@ import net.jodah.lyra.util.{ Duration => LyraDuration }
 import spray.can.Http
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import com.blinkbox.books.hermes.common.MessageSender
+import com.blinkbox.books.hermes.common.RabbitMqMessageSender
 
 object PurchaseTransformerService extends App with Configuration with Logging {
 
@@ -50,8 +52,8 @@ object PurchaseTransformerService extends App with Configuration with Logging {
   // TODO: Going to need a price client too? http://qa.mobcastdev.com/service/catalogue/prices
   // Could use the Java client library?
 
-  val emailMessageSender: MessageSender = { _ => ??? } // TODO: Put in place something that sends a message on an outgoing channel.
-  val clubcardMessageSender: MessageSender = { _ => ??? } // TODO: Put in place something that sends a message on an outgoing channel.
+  val emailMessageSender: MessageSender = new RabbitMqMessageSender() // TODO: Put in place something that sends a message on an outgoing channel.
+  val clubcardMessageSender: MessageSender = new RabbitMqMessageSender() // TODO: Put in place something that sends a message on an outgoing channel.
 
   val emailMsgErrorHandler: ErrorHandler = new RabbitMqErrorHandler(invalidMessagesForEmailQueue)
   val clubcardMsgErrorHandler: ErrorHandler = new RabbitMqErrorHandler(invalidMessagesForClubcardsQueue)
@@ -72,8 +74,12 @@ object PurchaseTransformerService extends App with Configuration with Logging {
 
   val connection = Connections.create(factory, lyraConfig)
 
+  val routingId = "TODO" // TODO: Get from properties.
+  val templateName = "TODO" // TODO: Get from properties. 
+
   // Create actors for email messages.
-  val emailMessageHandler = system.actorOf(Props(new EmailMessageHandler(bookDao, emailMessageSender, emailMsgErrorHandler)))
+  val emailMessageHandler = system.actorOf(Props(
+    new EmailMessageHandler(bookDao, emailMessageSender, emailMsgErrorHandler, routingId, templateName)))
   val emailMessageReceiver = system.actorOf(Props(AmqpConsumerActor(connection.createChannel, emailMessageHandler,
     messagesForEmailQueueName, None, amqpTimeout, None, "email-msg-consumer", prefetchCount)))
 

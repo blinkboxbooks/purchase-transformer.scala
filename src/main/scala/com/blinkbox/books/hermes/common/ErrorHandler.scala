@@ -1,6 +1,7 @@
 package com.blinkbox.books.hermes.common
 
 import scala.concurrent.Future
+import com.blinkboxbooks.hermes.rabbitmq.Message
 
 /**
  * Common interface for objects that dispose of messages that can't be processed,
@@ -22,7 +23,7 @@ trait ErrorHandler {
   // fields that represent metadata we should include, e.g. UID, timestamp, originator, content-type,
   // user ID, topic etc. (some of them optional). And the AMQP/RabbitMQ implementation would populate this from
   // AMQP headers...
-  def handleError(message: Any, error: Throwable): Future[Unit]
+  def handleError(message: Message, error: Throwable): Future[Unit]
 
 }
 
@@ -33,6 +34,6 @@ class RabbitMqErrorHandler(queueName: String) extends ErrorHandler {
 
   // TODO: Should change this to take a common Message type instead, so we can store/forward all the 
   // headers etc of the message.
-  override def handleError(message: Any, error: Throwable): Future[Unit] = ???
+  override def handleError(message: Message, error: Throwable): Future[Unit] = ???
 
 }

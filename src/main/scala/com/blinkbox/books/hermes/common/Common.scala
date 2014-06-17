@@ -1,6 +1,7 @@
 package com.blinkbox.books.hermes.common
 
 import scala.concurrent.Future
+import com.blinkboxbooks.hermes.rabbitmq.Message
 
 /**
  * Temporary bucket o'stuff, things here will be moved into common libraries or other places.
@@ -8,12 +9,18 @@ import scala.concurrent.Future
 
 object Common {
 
-  /**
-   * TODO: Move somewhere else.
-   * Type of function that sends messages to some previously bound queue.
-   */
-  type MessageSender = (Any) => Future[Unit]
+}
 
+/**
+ * Common interface for mechanism used to pass on message.
+ */
+trait MessageSender {
+  def send(message: Message): Future[Unit]
+}
+
+// TODO: Placeholder for actual implementation.
+class RabbitMqMessageSender extends MessageSender {
+  def send(message: Message): Future[Unit] = ???
 }
 
 /**

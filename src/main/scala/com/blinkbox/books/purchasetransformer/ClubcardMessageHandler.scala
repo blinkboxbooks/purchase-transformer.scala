@@ -2,10 +2,10 @@ package com.blinkbox.books.purchasetransformer
 
 import akka.actor.ActorLogging
 import akka.actor.Actor
-
 import com.blinkboxbooks.hermes.rabbitmq._
 import com.blinkbox.books.hermes.common.Common._
 import com.blinkbox.books.hermes.common.ErrorHandler
+import com.blinkbox.books.hermes.common.MessageSender
 
 /**
  * Actor that receives incoming purchase-complete messages

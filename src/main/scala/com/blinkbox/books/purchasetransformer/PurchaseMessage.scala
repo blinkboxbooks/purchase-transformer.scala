@@ -9,28 +9,17 @@ case class Price(amount: BigDecimal, currency: String)
 
 case class BasketItem(
   isbn: String,
-  publisherId: Int,
-  publisherUserName: String,
   salePrice: Price,
   listPrice: Price)
 
-case class BillingProvider(
-  name: String,
-  region: String,
-  transactionId: String,
-  payment: Price)
-
-case class PurchaseComplete(
-  userId: Int,
+case class Purchase(
   firstName: String,
   lastName: String,
   email: String,
-  deviceId: Int,
-  basketId: Int,
   clubcardNumber: String,
   clubcardPointsAward: Int,
-  //transactionDateTime: DateTime, // TODO: Add JodaTime for this!
   totalPrice: Price,
-  billingProviders: List[BillingProvider],
-  basketItems: List[BasketItem])
+  basketItems: Seq[BasketItem]) {
+  require(basketItems.size > 0, "No books given")
+}
 

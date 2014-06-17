@@ -8,13 +8,14 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
+import org.scalatest.FunSuiteLike
 
 /**
  * Tests that check the behaviour of the overall app, only mocking out RabbitMQ and external web services.
  */
 @RunWith(classOf[JUnitRunner])
 class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender
-  with FunSuite with BeforeAndAfter with MockitoSugar {
+  with FunSuiteLike with BeforeAndAfter with MockitoSugar {
 
   // TODO: Consider which of these test cases to pull out into tests of a common
   // actor class for message handlers (most of them!), and which test cases to leave here.
