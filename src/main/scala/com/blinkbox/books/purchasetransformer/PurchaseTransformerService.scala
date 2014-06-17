@@ -22,6 +22,8 @@ import com.blinkbox.books.hermes.common.RabbitMqMessageSender
 
 object PurchaseTransformerService extends App with Configuration with Logging {
 
+  logger.info("Starting")
+
   // TODO: Get configs from Configuration API.
   val factory = new ConnectionFactory()
   factory.setHost("127.0.0.1")
@@ -86,9 +88,11 @@ object PurchaseTransformerService extends App with Configuration with Logging {
 
   // Create actor that produces email messages.
   // Create actor that gets purchase transform messages from the dedicated queue, passing it to the above actor.
-  val clubcardMessageHandler = system.actorOf(Props(new ClubcardMessageHandler(bookDao, clubcardMessageSender, clubcardMsgErrorHandler)))
-  val clubcardMessageReceiver = system.actorOf(Props(AmqpConsumerActor(connection.createChannel, clubcardMessageHandler,
-    messagesForEmailQueueName, None, amqpTimeout, None, "clubcard-msg-consumer", prefetchCount)))
+  val clubcardMessageHandler = system.actorOf(Props(
+    new ClubcardMessageHandler(clubcardMessageSender, clubcardMsgErrorHandler, retryInterval)))
+  val clubcardMessageReceiver = system.actorOf(Props(
+    AmqpConsumerActor(connection.createChannel, clubcardMessageHandler,
+      messagesForEmailQueueName, None, amqpTimeout, None, "clubcard-msg-consumer", prefetchCount)))
 
   logger.info("Started")
 }

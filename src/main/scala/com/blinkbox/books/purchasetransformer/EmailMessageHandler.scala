@@ -3,24 +3,22 @@ package com.blinkbox.books.purchasetransformer
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.util.concurrent.TimeoutException
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.xml.NodeSeq
 import scala.xml.XML
-
 import com.blinkbox.books.hermes.common.Common._
 import com.blinkbox.books.hermes.common.ErrorHandler
 import com.blinkbox.books.hermes.common.MessageSender
 import com.blinkbox.books.hermes.common.XmlUtils.NodeSeqWrapper
 import com.blinkboxbooks.hermes.rabbitmq._
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Status.Failure
 import akka.actor.Status.Success
+import com.blinkbox.books.hermes.common.ReliableMessageHandler
 
 /**
  * Actor that receives incoming purchase-complete messages,
@@ -29,67 +27,19 @@ import akka.actor.Status.Success
  */
 class EmailMessageHandler(bookDao: BookDao, output: MessageSender, errorHandler: ErrorHandler,
   routingId: String, templateName: String, retryInterval: FiniteDuration)
-  extends Actor with ActorLogging {
+  extends ReliableMessageHandler(output, errorHandler, retryInterval) {
 
-  implicit val ec = context.dispatcher
+  override def handleMessage(message: Message, originalSender: ActorRef): Future[Unit] =
+    for (
+      purchase <- Future(purchaseFromXml(message.body));
+      isbns = purchase.basketItems.map(_.isbn);
+      bookFuture = bookDao.getBooks(isbns);
+      books <- bookFuture;
+      emailContent = buildEmailContent(purchase, books);
+      sendResult <- output.send(outgoingMessage(message, emailContent))
+    ) yield sendResult
 
-  def receive = {
-    case msg @ Message(_, _, _, payload) =>
-      val originalSender = sender
-      val result = for (
-        purchase <- Future(purchaseFromXml(payload));
-        isbns = purchase.basketItems.map(_.isbn);
-        bookFuture = bookDao.getBooks(isbns);
-        books <- bookFuture;
-        emailContent = buildEmailContent(purchase, books);
-        sendResult = output.send(message(msg, emailContent))
-      ) yield sendResult
-
-      result.onComplete {
-        case scala.util.Success(_) => originalSender ! Success("Sent message")
-        case scala.util.Failure(e) if isTemporaryFailure(e) => reschedule(msg, originalSender)
-        case scala.util.Failure(e) => handleUnrecoverableFailure(msg, e, originalSender)
-      }
-  }
-
-  // These are candidates for common methods in a message handler base class.
-
-  /**
-   * Reschedule message to be retried after an inveral. When re-sent, make sure
-   * that the message still has the same sender as the original.
-   */
-  private def reschedule(msg: Any, originalSender: ActorRef) =
-    context.system.scheduler.scheduleOnce(retryInterval, self, msg)(ec, originalSender)
-
-  /**
-   * An unrecoverable failure should be ACKed, i.e. we have successfully competed processing of it,
-   * even if the result wasn't as desired. Hence this will send a Success message to the original sender.
-   * The handling of the unrecoverable error is delegated to the error handler.
-   *
-   * If the error handler itself fails, this should cause a retry of the message again.
-   */
-  private def handleUnrecoverableFailure(msg: Message, e: Throwable, originalSender: ActorRef) = {
-    log.error(s"Unable to process message: ${e.getMessage}\nInput message was: ${new String(msg.body)}", e)
-    errorHandler.handleError(msg, e).onComplete {
-      case scala.util.Success(_) => {
-        log.info("Stored invalid message for later processing")
-        originalSender ! akka.actor.Status.Success(e)
-      }
-      case scala.util.Failure(e) => {
-        log.warning("Error handler failed to deal with error, rescheduling", e)
-        reschedule(msg, originalSender)
-      }
-    }
-  }
-
-  // These are potential abstract methods that concrete message handlers should override.
-
-  protected def isTemporaryFailure(e: Throwable) = e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException] // TODO
-
-  // These are specific to the message types processed in each handler - any way we can make them generic?
-  // TODO: change to different Message class, and set outgoing headers correctly.
-  private def message(inputMessage: Message, content: String) =
-    Message("", inputMessage.envelope, inputMessage.properties, content.getBytes("UTF-8"))
+  protected def isTemporaryFailure(e: Throwable) = e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException] // TODO: check
 
   /**
    * Parse input message.

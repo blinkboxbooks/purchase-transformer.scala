@@ -21,7 +21,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.xml.{ Elem, XML, Node }
 import scala.xml.Utility.trim
-import scala.reflect.runtime.universe._
 
 /**
  * Tests that check the behaviour of the overall app, only mocking out RabbitMQ and external web services.
@@ -41,6 +40,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   before {
     bookDao = mock[BookDao]
     messageSender = mock[MessageSender]
+    doReturn(Future.successful(())).when(messageSender).send(any[Message])
     errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Message], any[Throwable])
 
@@ -98,7 +98,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   // Failure scenarios.
   //
 
-  test("non-well-formed XML input") {
+  test("Non-well-formed XML input") {
     val msg = message("Not valid XML")
 
     within(500.millis) {

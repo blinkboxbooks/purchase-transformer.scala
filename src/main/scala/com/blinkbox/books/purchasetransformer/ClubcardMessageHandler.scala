@@ -1,28 +1,28 @@
 package com.blinkbox.books.purchasetransformer
 
-import akka.actor.ActorLogging
-import akka.actor.Actor
-import com.blinkboxbooks.hermes.rabbitmq._
-import com.blinkbox.books.hermes.common.Common._
+import akka.actor.ActorRef
 import com.blinkbox.books.hermes.common.ErrorHandler
 import com.blinkbox.books.hermes.common.MessageSender
+import com.blinkbox.books.hermes.common.ReliableMessageHandler
+import com.blinkboxbooks.hermes.rabbitmq.Message
+import java.io.IOException
+import java.util.concurrent.TimeoutException
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.Future
 
 /**
  * Actor that receives incoming purchase-complete messages
  * and passes on Clubcard messages.
  */
 
-class ClubcardMessageHandler(bookDao: BookDao, emailMessageSender: MessageSender, errorHandler: ErrorHandler)
-  extends Actor with ActorLogging {
+class ClubcardMessageHandler(output: MessageSender, errorHandler: ErrorHandler, retryInterval: FiniteDuration)
+  extends ReliableMessageHandler(output, errorHandler, retryInterval) {
 
-  def receive = {
-    case Message(_, _, _, payload) =>
-    // TODO: This will extract the message in the same way as the other one,
-    // but process it in a different way and send a different message out.
-    // Or, given that it's so simple, could just use the XSLT transform used in the old code
-    // to transform the input, without going via objects.
-    case msg => log.warning("Unexpected message: " + msg)
-  }
+  // TODO: This could just use the XSLT transform used in the old code
+  // to transform the input, without going via objects.
+  override def handleMessage(message: Message, originalSender: ActorRef): Future[Unit] = ??? // TODO
+
+  // TODO: Check!
+  override def isTemporaryFailure(e: Throwable) = e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException]
 
 }
-
