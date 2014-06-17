@@ -39,7 +39,9 @@ class EmailMessageHandler(bookDao: BookDao, output: MessageSender, errorHandler:
       sendResult <- output.send(outgoingMessage(message, emailContent))
     ) yield sendResult
 
-  protected def isTemporaryFailure(e: Throwable) = e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException] // TODO: check
+  // TODO: check
+  override protected def isTemporaryFailure(e: Throwable) =
+    e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException]
 
   /**
    * Parse input message.

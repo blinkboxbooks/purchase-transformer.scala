@@ -136,6 +136,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
+  // TODO: Move to tests for base class.
   test("Process fails with temporary error, then recovers") {
     val books = isbns(1)
     val temporaryError = new IOException("Test temporary failure")
@@ -155,6 +156,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
+  // TODO: Move to tests for base class.
   test("Error handler failure to deal with message") {
     val books = isbns(1)
     val ex = new IOException("Test failure from error handler")

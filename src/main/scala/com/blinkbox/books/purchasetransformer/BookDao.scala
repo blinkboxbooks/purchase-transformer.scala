@@ -93,6 +93,7 @@ object HttpBookDao {
     case t @ _ => new BookException(msg, t)
   }
 
+  // TODO: This needs to be configurable.
   val BOOK_SERVICE_URL = "/service/catalogue/books"
 
 }
