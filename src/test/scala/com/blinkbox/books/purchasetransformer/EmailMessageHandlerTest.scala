@@ -82,7 +82,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   test("Book with no authors") {
     val ids = isbns(1)
     val books = BookList(0, ids.size, ids.size,
-      ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", "TODO: dateStr", List())).toList)
+      ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", "2013-10-15T13:32:51Z", List())).toList)
     doReturn(Future.successful(books)).when(bookDao).getBooks(ids)
 
     within(500.millis) {
@@ -136,48 +136,6 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     verifyNoMoreInteractions(errorHandler, messageSender)
   }
 
-  // TODO: Move to tests for base class.
-  test("Process fails with temporary error, then recovers") {
-    val books = isbns(1)
-    val temporaryError = new IOException("Test temporary failure")
-
-    // Fail twice then succeed.
-    when(bookDao.getBooks(books))
-      .thenReturn(Future.failed(temporaryError))
-      .thenReturn(Future.failed(temporaryError))
-      .thenReturn(Future.successful(bookList(books)))
-
-    within(retryInterval * 3 + 500.millis) {
-      handler ! message(testMessage(1, 2, true).toString)
-      expectMsgType[Success]
-    }
-
-    checkSentMessage(expectedEmailMessage(1, 2, true))
-    verifyNoMoreInteractions(errorHandler, messageSender)
-  }
-
-  // TODO: Move to tests for base class.
-  test("Error handler failure to deal with message") {
-    val books = isbns(1)
-    val ex = new IOException("Test failure from error handler")
-
-    doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
-
-    // Make error handler fail twice then succeed.
-    when(errorHandler.handleError(any[Message], any[Throwable]))
-      .thenReturn(Future.failed(ex))
-      .thenReturn(Future.failed(ex))
-      .thenReturn(Future.successful(()))
-
-    within(retryInterval * 3 + 500.millis) {
-      handler ! message(testMessage(1, 2, true).toString)
-      expectMsgType[Success]
-    }
-
-    checkSentMessage(expectedEmailMessage(1, 2, true))
-    verifyNoMoreInteractions(errorHandler, messageSender)
-  }
-
   private def emailHandler = system.actorOf(Props(
     new EmailMessageHandler(bookDao, messageSender, errorHandler, routingId, templateName, retryInterval)))
 
@@ -212,7 +170,7 @@ object EmailMessageHandlerTests {
   def author(isbn: String) = authors((isbn.toLong - BASE_ISBN - 1).toInt)
   def authorLink(isbn: String) = Link("", "", None, author(isbn))
   def bookList(ids: Seq[String]) = BookList(0, ids.size, ids.size,
-    ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", "TODO: dateStr", List(authorLink(isbn)))).toList)
+    ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", "2013-10-15T13:32:51Z", List(authorLink(isbn)))).toList)
 
   def message(content: String) = Message("consumer-tag", null, null, content.getBytes("UTF-8"))
 

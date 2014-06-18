@@ -1,10 +1,8 @@
 package com.blinkbox.books.hermes.common
 
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.testkit.TestKit
-import akka.testkit.ImplicitSender
+import akka.actor.{ ActorRef, ActorSystem, Props }
+import akka.actor.Status.{ Success, Failure }
+import akka.testkit.{ TestKit, ImplicitSender }
 import com.blinkboxbooks.hermes.rabbitmq.Message
 import java.io.IOException
 import java.util.concurrent.TimeoutException
@@ -25,9 +23,11 @@ class ReliableMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
 
   private var errorHandler: ErrorHandler = _
   private var messageSender: MessageSender = _
+  private var mockHandler: Handler = _
 
   private var handler: ActorRef = _
 
+  val message = Message("consumer-tag", null, null, "Test message".getBytes("UTF-8"))
   val retryInterval = 100.millis
 
   before {
@@ -35,17 +35,26 @@ class ReliableMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
     doReturn(Future.successful(())).when(messageSender).send(any[Message])
     errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Message], any[Throwable])
+    mockHandler = mock[Handler]
+    doReturn(Future.successful(())).when(mockHandler).handleMessage(any[Message], any[ActorRef])
 
     handler = messageHandler
   }
 
-  class TestMessageHandler(output: MessageSender, errorHandler: ErrorHandler, retryInterval: FiniteDuration)
+  trait Handler {
+    def handleMessage(message: Message, originalSender: ActorRef): Future[Unit]
+  }
+
+  // A concrete message handler class for testing.
+  private class TestMessageHandler(output: MessageSender, errorHandler: ErrorHandler, retryInterval: FiniteDuration)
     extends ReliableMessageHandler(output, errorHandler, retryInterval) {
 
-    override def handleMessage(message: Message, originalSender: ActorRef): Future[Unit] = ??? // TODO!!!
+    // Pass on invocations to a mock so we can instrument responses and check invocations.
+    override def handleMessage(message: Message, originalSender: ActorRef): Future[Unit] =
+      mockHandler.handleMessage(message, originalSender)
 
-    override protected def isTemporaryFailure(e: Throwable) =
-      e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException]
+    // For the tests, consider IOExceptions temporary and all other exceptions unrecoverable.
+    override protected def isTemporaryFailure(e: Throwable) = e.isInstanceOf[IOException]
 
   }
 
@@ -53,19 +62,74 @@ class ReliableMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
     new TestMessageHandler(messageSender, errorHandler, retryInterval)))
 
   test("Handle valid message") {
-    fail("TODO")
+    within(200.millis) {
+      handler ! message
+
+      expectMsgType[Success]
+      verify(mockHandler).handleMessage(message, self)
+      verifyNoMoreInteractions(mockHandler, errorHandler)
+    }
   }
 
-  test("Handle temporary failure") {
-    fail("TODO")
+  test("Handle temporary failure, check recovery") {
+    // Make implementation fail N times then succeed.
+    // Fail twice then succeed.
+    val temporaryError = new IOException("Test exception")
+    when(mockHandler.handleMessage(any[Message], any[ActorRef]))
+      .thenReturn(Future.failed(temporaryError))
+      .thenReturn(Future.failed(temporaryError))
+      .thenReturn(Future.successful(()))
+
+    within(retryInterval * 3 + 200.millis) {
+      handler ! message
+
+      // Should retry 3 times, succeeding on the last attempt.
+      expectMsgType[Success]
+      verify(mockHandler, times(3)).handleMessage(message, self)
+      verifyNoMoreInteractions(mockHandler, errorHandler)
+    }
   }
 
   test("Handle unrecoverable failure") {
-    fail("TODO")
+    val unrecoverableError = new Exception("Test exception")
+    when(mockHandler.handleMessage(any[Message], any[ActorRef]))
+      .thenReturn(Future.failed(unrecoverableError))
+
+    within(200.millis) {
+      handler ! message
+
+      // Unrecoverable error should be dealt with by error handler,
+      // still returning successful status for processing of the message.
+      expectMsgType[Success]
+      verify(mockHandler).handleMessage(message, self)
+      verify(errorHandler).handleError(message, unrecoverableError)
+      verifyNoMoreInteractions(mockHandler, errorHandler)
+    }
   }
 
   test("Handle failure to record unrecoverable failure") {
-    fail("TODO")
+    val unrecoverableError = new Exception("Test exception")
+    when(mockHandler.handleMessage(any[Message], any[ActorRef]))
+      .thenReturn(Future.failed(unrecoverableError))
+
+    val ex = new Exception("Test exception from error handler")
+
+    // Make error handler fail twice then recover.
+    when(errorHandler.handleError(any[Message], any[Throwable]))
+      .thenReturn(Future.failed(ex))
+      .thenReturn(Future.failed(ex))
+      .thenReturn(Future.successful(()))
+
+    within(retryInterval * 3 + 500.millis) {
+      handler ! message
+
+      // In case of failure to record an error, retry processing the
+      // message from the start.
+      expectMsgType[Success]
+      verify(mockHandler, times(3)).handleMessage(message, self)
+      verify(errorHandler, times(3)).handleError(message, unrecoverableError)
+      verifyNoMoreInteractions(mockHandler, errorHandler)
+    }
   }
 
 }
