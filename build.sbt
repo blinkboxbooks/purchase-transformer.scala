@@ -26,7 +26,8 @@ libraryDependencies ++= {
   "org.mockito"         % "mockito-core"         % "1.9.5" % "test",
   "com.typesafe.akka"  %% "akka-actor"           % akkaV,
   "com.typesafe.akka"  %% "akka-testkit"         % akkaV % "test",
-  "joda-time"           % "joda-time"            % "2.3"
+  "joda-time"           % "joda-time"            % "2.3",
+  "net.sf.saxon"        % "Saxon-HE"             % "9.5.1-5"
   )
 }
 
