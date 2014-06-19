@@ -1,14 +1,12 @@
 package com.blinkbox.books.purchasetransformer
 
-import com.blinkboxbooks.hermes.rabbitmq.Message
-import com.blinkbox.books.hermes.common.MessageSender
+import com.blinkbox.books.messaging._
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.verify
+import org.scalatest.Assertions._
 import scala.xml.Node
 import scala.xml.Utility.trim
 import scala.xml.XML
-import org.scalatest.Assertions
-import Assertions._
 
 object TestMessages {
 
@@ -22,8 +20,8 @@ object TestMessages {
   def isbn(id: Int) = BaseIsbn + id
   def isbns(ids: Int*) = ids.map(isbn(_).toString).toList
 
-  /** Create test message with given content. */
-  def message(content: String) = Message("consumer-tag", null, null, content.getBytes("UTF-8"))
+  //  /** Create test message with given content. */
+  //  def message(content: String) = Event("consumer-tag", null, null, content.getBytes("UTF-8"))
 
   /** Parse string into a normalised XML representation that's convenient for comparisons. */
   def xml(str: String) = trim(XML.loadString(str))
@@ -82,13 +80,17 @@ object TestMessages {
       </basketItems>
     </p:purchase>
 
-  def checkSentMessage(messageSender: MessageSender, expectedContent: Node) {
-    val argument = ArgumentCaptor.forClass(classOf[Message])
-    verify(messageSender).send(argument.capture)
+  def checkPublishedEvent(publisher: EventPublisher, expectedContent: Node) {
+    val argument = ArgumentCaptor.forClass(classOf[Event])
+    verify(publisher).publish(argument.capture)
     val content = new String(argument.getValue.body, "UTF-8")
-    // Would be nice to have a better way to compare XML docs, this
-    // fails for some reason when comparing the elements directly as opposed to the stringified form!
-    assert(xml(content).toString == expectedContent.toString)
+
+    // TODO: Horrible hack to get around weirdnesses in XML comparison in Scala.
+    // Would be nice to come up with a general solution for this. Just comparing the strings picks up insignificant
+    // differences e.g. orders of attributes. Comparing the XML elements directly avoids this but has other quirks
+    // that means it throws up differences where it shoudln't in some cases.
+    // (I recommend the comments in scala.xml.Equality for an impression of the issues involved - and a good laugh!).
+    assert(xml(content) == expectedContent || xml(content).toString == expectedContent.toString)
   }
 
 }

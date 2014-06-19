@@ -1,11 +1,15 @@
 package com.blinkbox.books.purchasetransformer
 
+import com.blinkbox.books.messaging.XmlUtils._
+import java.io.ByteArrayInputStream
 import scala.util.{ Try, Success, Failure }
 import scala.xml.{ XML, Node }
-import com.blinkbox.books.hermes.common.XmlUtils._
 import scala.xml.NodeSeq
-import java.io.ByteArrayInputStream
+import com.blinkbox.books.messaging.EventContext
 
+/**
+ *  Value class for incoming purchase data.
+ */
 case class Purchase(
   userId: String,
   basketId: String,
@@ -29,7 +33,7 @@ case class Price(amount: BigDecimal, currency: String)
 object Purchase {
 
   /**
-   * Parse input message.
+   * Convert input message to Purchase object.
    */
   def fromXml(xml: Array[Byte]): Purchase = {
     val purchase = XML.load(new ByteArrayInputStream(xml))
@@ -47,4 +51,8 @@ object Purchase {
   private def price(priceNode: NodeSeq) =
     Price(BigDecimal(priceNode.value("amount")), priceNode.value("currency"))
 
+  /** Get Event Context from fields of purchase message. */
+  def context(purchase: Purchase) =
+    EventContext(originator = PurchaseTransformerService.Originator,
+      userId = Some(purchase.userId), transactionId = Some(purchase.basketId), isbn = Some(purchase.basketItems(0).isbn))
 }

@@ -3,9 +3,7 @@ package com.blinkbox.books.purchasetransformer
 import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.actor.Status.{ Success, Failure }
 import akka.testkit.{ ImplicitSender, TestKit }
-import com.blinkbox.books.hermes.common.Common._
-import com.blinkbox.books.hermes.common.{ ErrorHandler, MessageSender }
-import com.blinkboxbooks.hermes.rabbitmq.Message
+import com.blinkbox.books.messaging._
 import java.io.IOException
 import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
@@ -16,13 +14,12 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuiteLike
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
-import org.xml.sax.SAXParseException
+import org.xml.sax.SAXException
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.xml.{ Elem, XML, Node }
 import scala.xml.Utility.trim
 import TestMessages._
-import org.xml.sax.SAXException
 
 /**
  * Tests that check the behaviour of the overall app, only mocking out RabbitMQ and external web services.
@@ -34,20 +31,22 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   import EmailMessageHandlerTests._
 
   private var errorHandler: ErrorHandler = _
-  private var messageSender: MessageSender = _
+  private var eventPublisher: EventPublisher = _
   private var bookDao: BookDao = _
 
   private var handler: ActorRef = _
 
+  val eventContext = EventContext("test")
+
   before {
     bookDao = mock[BookDao]
-    messageSender = mock[MessageSender]
-    doReturn(Future.successful(())).when(messageSender).send(any[Message])
+    eventPublisher = mock[EventPublisher]
+    doReturn(Future.successful(())).when(eventPublisher).publish(any[Event])
     errorHandler = mock[ErrorHandler]
-    doReturn(Future.successful(())).when(errorHandler).handleError(any[Message], any[Throwable])
+    doReturn(Future.successful(())).when(errorHandler).handleError(any[Event], any[Throwable])
 
     handler = system.actorOf(Props(
-      new EmailMessageHandler(bookDao, messageSender, errorHandler, routingId, templateName, retryInterval)))
+      new EmailMessageHandler(bookDao, eventPublisher, errorHandler, routingId, templateName, retryInterval)))
   }
 
   //
@@ -59,13 +58,13 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
     within(500.millis) {
-      handler ! message(testMessage(2, 2, true).toString)
+      handler ! Event(testMessage(2, 2, true).toString, eventContext)
       expectMsgType[Success]
 
       verify(bookDao).getBooks(books)
-      checkSentMessage(messageSender, expectedEmailMessage(2, 2, true))
+      checkPublishedEvent(eventPublisher, expectedEmailMessage(2, 2, true))
 
-      verifyNoMoreInteractions(errorHandler, messageSender)
+      verifyNoMoreInteractions(errorHandler, eventPublisher)
     }
   }
 
@@ -74,11 +73,11 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
     within(500.millis) {
-      handler ! message(testMessage(1, 1, false).toString)
+      handler ! Event(testMessage(1, 1, false).toString, eventContext)
       expectMsgType[Success]
 
-      checkSentMessage(messageSender, expectedEmailMessage(1, 1, false))
-      verifyNoMoreInteractions(errorHandler, messageSender)
+      checkPublishedEvent(eventPublisher, expectedEmailMessage(1, 1, false))
+      verifyNoMoreInteractions(errorHandler, eventPublisher)
     }
   }
 
@@ -89,11 +88,11 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     doReturn(Future.successful(books)).when(bookDao).getBooks(ids)
 
     within(500.millis) {
-      handler ! message(testMessage(1, 1, true).toString)
+      handler ! Event(testMessage(1, 1, true).toString, eventContext)
       expectMsgType[Success]
 
-      checkSentMessage(messageSender, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
-      verifyNoMoreInteractions(errorHandler, messageSender)
+      checkPublishedEvent(eventPublisher, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
+      verifyNoMoreInteractions(errorHandler, eventPublisher)
     }
   }
 
@@ -102,45 +101,45 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   //
 
   test("Non-well-formed XML input") {
-    val msg = message("Not valid XML")
+    val msg = Event("Not valid XML", eventContext)
 
     within(500.millis) {
       handler ! msg
       expectMsgType[Success]
 
       verify(errorHandler).handleError(matcherEq(msg), any[SAXException])
-      verifyNoMoreInteractions(errorHandler, messageSender)
+      verifyNoMoreInteractions(errorHandler, eventPublisher)
     }
   }
 
   test("Well-formed XML that fails in conversion") {
-    val msg = message("<p:purchase><invalid>Not the expected content</invalid></p:purchase>")
+    val msg = Event("<p:purchase><invalid>Not the expected content</invalid></p:purchase>", eventContext)
 
     within(500.millis) {
       handler ! msg
       expectMsgType[Success]
 
       checkRecordedError[IllegalArgumentException](msg)
-      verifyNoMoreInteractions(errorHandler, messageSender)
+      verifyNoMoreInteractions(errorHandler, eventPublisher)
     }
   }
 
-  test("Message with no books") {
+  test("Event with no books") {
     doReturn(Future.successful(bookList(List()))).when(bookDao).getBooks(any[Seq[String]])
 
-    val msg = message(testMessage(0, 1, false).toString)
+    val msg = Event(testMessage(0, 1, false).toString, eventContext)
 
     within(500.millis) {
       handler ! msg
       expectMsgType[Success]
 
       checkRecordedError[IllegalArgumentException](msg)
-      verifyNoMoreInteractions(errorHandler, messageSender)
+      verifyNoMoreInteractions(errorHandler, eventPublisher)
     }
   }
 
   // TODO: Ditch this, seeing as we only check the class of exception?
-  private def checkRecordedError[T <: Throwable](msg: Message)(implicit manifest: Manifest[T]): Unit = {
+  private def checkRecordedError[T <: Throwable](msg: Event)(implicit manifest: Manifest[T]): Unit = {
     val expectedExceptionClass = manifest.erasure.asInstanceOf[Class[T]]
     val error = ArgumentCaptor.forClass(classOf[Exception])
     verify(errorHandler).handleError(matcherEq(msg), error.capture)

@@ -2,34 +2,31 @@ package com.blinkbox.books.purchasetransformer
 
 import akka.actor.ActorRef
 import akka.actor.Status.{ Success, Failure }
+import com.blinkboxbooks.hermes.rabbitmq._
+import com.blinkbox.books.messaging._
 import java.io.IOException
 import java.util.concurrent.TimeoutException
-import scala.concurrent.Future
 import scala.concurrent.duration._
-import com.blinkbox.books.hermes.common.{ ErrorHandler, MessageSender, ReliableMessageHandler }
-import com.blinkbox.books.hermes.common.Common._
-import com.blinkbox.books.hermes.common.XmlUtils.NodeSeqWrapper
-import com.blinkboxbooks.hermes.rabbitmq._
-
-import Purchase._
+import scala.concurrent.Future
 
 /**
  * Actor that receives incoming purchase-complete messages,
  * gets additional information about books purchased,
  * and passes on Email messages.
  */
-class EmailMessageHandler(bookDao: BookDao, output: MessageSender, errorHandler: ErrorHandler,
+class EmailMessageHandler(bookDao: BookDao, output: EventPublisher, errorHandler: ErrorHandler,
   routingId: String, templateName: String, retryInterval: FiniteDuration)
-  extends ReliableMessageHandler(output, errorHandler, retryInterval) {
+  extends ReliableEventHandler(output, errorHandler, retryInterval) {
 
-  override def handleMessage(message: Message, originalSender: ActorRef): Future[Unit] =
+  override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] =
     for (
-      purchase <- Future(fromXml(message.body));
+      purchase <- Future(Purchase.fromXml(event.body));
       isbns = purchase.basketItems.map(_.isbn);
       bookFuture = bookDao.getBooks(isbns);
       books <- bookFuture;
       emailContent = buildEmailContent(purchase, books);
-      sendResult <- output.send(outgoingMessage(message, emailContent))
+      eventContext = Purchase.context(purchase);
+      sendResult <- output.publish(Event(emailContent, eventContext))
     ) yield sendResult
 
   // TODO: check

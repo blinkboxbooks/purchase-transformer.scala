@@ -5,10 +5,8 @@ import akka.actor.Props
 import akka.io.IO
 import akka.util.Timeout
 import com.blinkbox.books.config.Configuration
+import com.blinkbox.books.messaging._
 import com.blinkboxbooks.hermes.rabbitmq.AmqpConsumerActor
-import com.blinkbox.books.hermes.common.ErrorHandler
-import com.blinkbox.books.hermes.common.RabbitMqErrorHandler
-import com.blinkbox.books.hermes.common.Common._
 import com.typesafe.scalalogging.slf4j.Logging
 import com.rabbitmq.client.ConnectionFactory
 import net.jodah.lyra.Connections
@@ -17,10 +15,10 @@ import net.jodah.lyra.util.{ Duration => LyraDuration }
 import spray.can.Http
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import com.blinkbox.books.hermes.common.MessageSender
-import com.blinkbox.books.hermes.common.RabbitMqMessageSender
 
 object PurchaseTransformerService extends App with Configuration with Logging {
+
+  val Originator = "purchase-transformer"
 
   logger.info("Starting")
 
@@ -50,15 +48,22 @@ object PurchaseTransformerService extends App with Configuration with Logging {
   val amqpTimeout = Timeout(10.seconds)
   val prefetchCount = 100
 
+  // Could use the Java client library instead?
   val bookDao = new HttpBookDao(httpActor, "http:localhost/catalogue/books")
-  // TODO: Going to need a price client too? http://qa.mobcastdev.com/service/catalogue/prices
-  // Could use the Java client library?
 
-  val emailMessageSender: MessageSender = new RabbitMqMessageSender() // TODO: Put in place something that sends a message on an outgoing channel.
-  val clubcardMessageSender: MessageSender = new RabbitMqMessageSender() // TODO: Put in place something that sends a message on an outgoing channel.
+  // TODO: Replace these with RabbitMQ implementations when available.
+  class DummyMessageSender(exchangeName: String) extends EventPublisher {
+    override def publish(event: Event): Future[Unit] = ???
+  }
+  class DummyErrorHandler(queueName: String) extends ErrorHandler {
+    override def handleError(message: Event, error: Throwable): Future[Unit] = ???
+  }
 
-  val emailMsgErrorHandler: ErrorHandler = new RabbitMqErrorHandler(invalidMessagesForEmailQueue)
-  val clubcardMsgErrorHandler: ErrorHandler = new RabbitMqErrorHandler(invalidMessagesForClubcardsQueue)
+  val emailMessageSender: EventPublisher = new DummyMessageSender(messagesForEmailQueueName)
+  val clubcardMessageSender: EventPublisher = new DummyMessageSender(outgoingExchangeForClubcardMessages)
+
+  val emailMsgErrorHandler: ErrorHandler = new DummyErrorHandler(invalidMessagesForEmailQueue)
+  val clubcardMsgErrorHandler: ErrorHandler = new DummyErrorHandler(invalidMessagesForClubcardsQueue)
 
   // TODO: Could factory out standard connection policies into the shared library.
   // This would entail placing the configuration properties for these in a common place in the
