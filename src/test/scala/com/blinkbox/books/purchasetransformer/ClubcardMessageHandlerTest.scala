@@ -47,7 +47,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   //
 
   test("Send message with clubcard points") {
-    within(2009999.millis) {
+    within(200.millis) {
       handler ! Event(testMessage(2, 2, true).toString, eventContext)
       expectMsgType[Success]
 
