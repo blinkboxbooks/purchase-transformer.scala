@@ -1,11 +1,11 @@
 package com.blinkbox.books.purchasetransformer
 
-import com.blinkbox.books.messaging.XmlUtils._
+import com.blinkbox.books.messaging.Xml._
+import com.blinkbox.books.messaging.EventHeader
 import java.io.ByteArrayInputStream
 import scala.util.{ Try, Success, Failure }
 import scala.xml.{ XML, Node }
 import scala.xml.NodeSeq
-import com.blinkbox.books.messaging.EventContext
 
 /**
  *  Value class for incoming purchase data.
@@ -53,6 +53,6 @@ object Purchase {
 
   /** Get Event Context from fields of purchase message. */
   def context(purchase: Purchase) =
-    EventContext(originator = PurchaseTransformerService.Originator,
+    EventHeader(originator = PurchaseTransformerService.Originator,
       userId = Some(purchase.userId), transactionId = Some(purchase.basketId), isbn = Some(purchase.basketItems(0).isbn))
 }

@@ -20,13 +20,13 @@ class EmailMessageHandler(bookDao: BookDao, output: EventPublisher, errorHandler
 
   override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] =
     for (
-      purchase <- Future(Purchase.fromXml(event.body));
+      purchase <- Future(Purchase.fromXml(event.body.content));
       isbns = purchase.basketItems.map(_.isbn);
       bookFuture = bookDao.getBooks(isbns);
       books <- bookFuture;
       emailContent = buildEmailContent(purchase, books);
       eventContext = Purchase.context(purchase);
-      sendResult <- output.publish(Event(emailContent, eventContext))
+      sendResult <- output.publish(Event.xml(emailContent, eventContext))
     ) yield sendResult
 
   // TODO: check

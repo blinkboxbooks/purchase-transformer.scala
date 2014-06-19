@@ -18,11 +18,11 @@ class ClubcardMessageHandler(output: EventPublisher, errorHandler: ErrorHandler,
 
   // Use XSLT to transform the input and pass on the result to the output.
   override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] = Future {
-    val purchase = Purchase.fromXml(event.body)
+    val purchase = Purchase.fromXml(event.body.content)
     val eventContext = Purchase.context(purchase);
     if (purchase.clubcardPointsAward.isDefined) {
       log.debug(s"Sending email message for userUd ${purchase.userId}, basketId ${purchase.basketId}")
-      output.publish(Event(transform(event.contentAsString), eventContext))
+      output.publish(Event.xml(transform(event.body.toString), eventContext))
     } else {
       log.debug(s"Ignoring purchase message for userUd ${purchase.userId}, basketId ${purchase.basketId}, with no clubcard points awarded")
       Future.successful(())

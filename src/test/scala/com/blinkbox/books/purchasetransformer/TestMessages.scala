@@ -81,16 +81,16 @@ object TestMessages {
     </p:purchase>
 
   def checkPublishedEvent(publisher: EventPublisher, expectedContent: Node) {
-    val argument = ArgumentCaptor.forClass(classOf[Event])
-    verify(publisher).publish(argument.capture)
-    val content = new String(argument.getValue.body, "UTF-8")
+    val eventArgument = ArgumentCaptor.forClass(classOf[Event])
+    verify(publisher).publish(eventArgument.capture)
+    val xmlContent = eventArgument.getValue.body.toString
 
     // TODO: Horrible hack to get around weirdnesses in XML comparison in Scala.
     // Would be nice to come up with a general solution for this. Just comparing the strings picks up insignificant
     // differences e.g. orders of attributes. Comparing the XML elements directly avoids this but has other quirks
     // that means it throws up differences where it shoudln't in some cases.
     // (I recommend the comments in scala.xml.Equality for an impression of the issues involved - and a good laugh!).
-    assert(xml(content) == expectedContent || xml(content).toString == expectedContent.toString)
+    assert(xml(xmlContent) == expectedContent || xml(xmlContent).toString == expectedContent.toString)
   }
 
 }

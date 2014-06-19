@@ -36,7 +36,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
 
   private var handler: ActorRef = _
 
-  val eventContext = EventContext("test")
+  val eventHeader = EventHeader("test")
 
   before {
     bookDao = mock[BookDao]
@@ -58,7 +58,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
     within(500.millis) {
-      handler ! Event(testMessage(2, 2, true).toString, eventContext)
+      handler ! Event.xml(testMessage(2, 2, true).toString, eventHeader)
       expectMsgType[Success]
 
       verify(bookDao).getBooks(books)
@@ -73,7 +73,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
     within(500.millis) {
-      handler ! Event(testMessage(1, 1, false).toString, eventContext)
+      handler ! Event.xml(testMessage(1, 1, false).toString, eventHeader)
       expectMsgType[Success]
 
       checkPublishedEvent(eventPublisher, expectedEmailMessage(1, 1, false))
@@ -88,7 +88,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     doReturn(Future.successful(books)).when(bookDao).getBooks(ids)
 
     within(500.millis) {
-      handler ! Event(testMessage(1, 1, true).toString, eventContext)
+      handler ! Event.xml(testMessage(1, 1, true).toString, eventHeader)
       expectMsgType[Success]
 
       checkPublishedEvent(eventPublisher, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
@@ -101,7 +101,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   //
 
   test("Non-well-formed XML input") {
-    val msg = Event("Not valid XML", eventContext)
+    val msg = Event.xml("Not valid XML", eventHeader)
 
     within(500.millis) {
       handler ! msg
@@ -113,7 +113,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   }
 
   test("Well-formed XML that fails in conversion") {
-    val msg = Event("<p:purchase><invalid>Not the expected content</invalid></p:purchase>", eventContext)
+    val msg = Event.xml("<p:purchase><invalid>Not the expected content</invalid></p:purchase>", eventHeader)
 
     within(500.millis) {
       handler ! msg
@@ -127,7 +127,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   test("Event with no books") {
     doReturn(Future.successful(bookList(List()))).when(bookDao).getBooks(any[Seq[String]])
 
-    val msg = Event(testMessage(0, 1, false).toString, eventContext)
+    val msg = Event.xml(testMessage(0, 1, false).toString, eventHeader)
 
     within(500.millis) {
       handler ! msg

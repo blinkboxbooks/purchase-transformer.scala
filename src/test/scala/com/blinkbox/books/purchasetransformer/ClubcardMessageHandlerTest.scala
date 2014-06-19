@@ -30,7 +30,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   private var handler: ActorRef = _
 
   val retryInterval = 100.millis
-  val eventContext = EventContext("test")
+  val eventHeader = EventHeader("test")
 
   before {
     eventPublisher = mock[EventPublisher]
@@ -47,8 +47,8 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   //
 
   test("Send message with clubcard points") {
-    within(200.millis) {
-      handler ! Event(testMessage(2, 2, true).toString, eventContext)
+    within(5000.millis) {
+      handler ! Event.xml(testMessage(2, 2, true).toString, eventHeader)
       expectMsgType[Success]
 
       checkPublishedEvent(eventPublisher, expectedClubcardMessage)
@@ -57,8 +57,8 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   }
 
   test("Send message without clubcard points") {
-    within(200.millis) {
-      handler ! Event(testMessage(1, 1, false).toString, eventContext)
+    within(5000.millis) {
+      handler ! Event.xml(testMessage(1, 1, false).toString, eventHeader)
       expectMsgType[Success]
 
       // Should not send any message if the purchase had no clubcard points.
@@ -84,9 +84,9 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   //
 
   test("non-well-formed XML input") {
-    val msg = Event("Not valid XML", eventContext)
+    val msg = Event.xml("Not valid XML", eventHeader)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! msg
 
       expectMsgType[Success]
@@ -97,9 +97,9 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
 
   test("Well formed XML that can't be converted OK") {
     // Not sure if we can do this, given no schema for the input nor output?
-    val msg = Event("<not><the><right>XML</right></the></not>", eventContext)
+    val msg = Event.xml("<not><the><right>XML</right></the></not>", eventHeader)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! msg
 
       expectMsgType[Success]
