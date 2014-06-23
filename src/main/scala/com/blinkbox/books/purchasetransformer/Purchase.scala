@@ -54,5 +54,5 @@ object Purchase {
   /** Get Event Context from fields of purchase message. */
   def context(purchase: Purchase) =
     EventHeader(originator = PurchaseTransformerService.Originator,
-      userId = Some(purchase.userId), transactionId = Some(purchase.basketId), isbn = Some(purchase.basketItems(0).isbn))
+      userId = Some(purchase.userId), transactionId = Some(purchase.basketId))
 }

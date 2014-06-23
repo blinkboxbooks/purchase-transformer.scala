@@ -83,7 +83,7 @@ object TestMessages {
   def checkPublishedEvent(publisher: EventPublisher, expectedContent: Node) {
     val eventArgument = ArgumentCaptor.forClass(classOf[Event])
     verify(publisher).publish(eventArgument.capture)
-    val xmlContent = eventArgument.getValue.body.toString
+    val xmlContent = eventArgument.getValue.body.asString
 
     // TODO: Horrible hack to get around weirdnesses in XML comparison in Scala.
     // Would be nice to come up with a general solution for this. Just comparing the strings picks up insignificant

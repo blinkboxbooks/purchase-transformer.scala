@@ -22,7 +22,7 @@ class ClubcardMessageHandler(output: EventPublisher, errorHandler: ErrorHandler,
     val eventContext = Purchase.context(purchase);
     if (purchase.clubcardPointsAward.isDefined) {
       log.debug(s"Sending email message for userUd ${purchase.userId}, basketId ${purchase.basketId}")
-      output.publish(Event.xml(transform(event.body.toString), eventContext))
+      output.publish(Event.xml(transform(event.body.asString), eventContext))
     } else {
       log.debug(s"Ignoring purchase message for userUd ${purchase.userId}, basketId ${purchase.basketId}, with no clubcard points awarded")
       Future.successful(())
