@@ -12,11 +12,11 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class PurchaseTransformerFunctionalTest extends FunSuite with BeforeAndAfter with MockitoSugar {
 
-  test("Email message flow") {
+  ignore("Email message flow") {
     fail("TODO")
   }
 
-  test("Clubcard message flow") {
+  ignore("Clubcard message flow") {
     fail("TODO")
   }
 
