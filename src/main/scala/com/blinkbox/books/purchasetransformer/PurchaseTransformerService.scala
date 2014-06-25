@@ -4,70 +4,35 @@ import akka.actor.{ ActorSystem, Props }
 import akka.io.IO
 import akka.util.Timeout
 import com.blinkbox.books.config.Configuration
+import com.blinkboxbooks.hermes.rabbitmq._
+import com.blinkboxbooks.hermes.rabbitmq.RabbitMqConsumer.QueueConfiguration
 import com.blinkbox.books.messaging._
 import com.typesafe.scalalogging.slf4j.Logging
-import com.rabbitmq.client.ConnectionFactory
-import net.jodah.lyra.Connections
-import net.jodah.lyra.config._
-import net.jodah.lyra.util.{ Duration => LyraDuration }
-import spray.can.Http
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import com.blinkboxbooks.hermes.rabbitmq.RabbitMqConsumer
-import com.blinkboxbooks.hermes.rabbitmq.RabbitMqConsumer.QueueConfiguration
+import spray.can.Http
+import com.typesafe.config.ConfigObject
 
+/**
+ * Entry point for the purchase-transformer service.
+ */
 object PurchaseTransformerService extends App with Configuration with Logging {
 
   val Originator = "purchase-transformer"
 
   logger.info("Starting")
 
-  val serviceConf = config.getConfig("service.purchaseTransformer")
+  val connection = RabbitMq.reliableConnection()
 
-  //val rabbitConf = config.getConfig("rabbitmq") // Or just pass config into the RabbitMQ library calls? Yeah, that...
-
-  // TODO: Get RabbitMQ configs from Configuration API.
-  val factory = new ConnectionFactory()
-  factory.setHost("127.0.0.1")
-  factory.setPort(5672)
-  factory.setUsername("guest")
-  factory.setPassword("guest")
-
-  // Note: this doesn't fail on startup if the broker is down, it will try to reconnection.
-  // This is a debated issue, but I think this is far better!!!
-  val initialRetryInterval = 5L
-  val maxRetryInterval = 60L
-  val lyraConfig = new Config()
-    .withConnectRetryPolicy(RetryPolicies.retryAlways)
-    .withRecoveryPolicy(new RecoveryPolicy()
-      .withBackoff(LyraDuration.seconds(initialRetryInterval), LyraDuration.seconds(maxRetryInterval)))
-    .withRetryPolicy(new RetryPolicy()
-      .withBackoff(LyraDuration.seconds(initialRetryInterval), LyraDuration.seconds(maxRetryInterval)))
-
-  val connection = Connections.create(factory, lyraConfig)
-
-  val invalidMessagesForClubcardsQueue = "Clubcard.Listener.DLQ"
-  val outgoingExchangeForClubcardMessages = "Clubcard.Collector.Exchange"
-
-  val invalidMessagesForEmailQueue = "Mail.Listener.DLQ"
-  val outgoingExchangeForEmailMessages = "Mail.Sender.Exchange"
-
+  // Initialise the actor system.
   implicit val system = ActorSystem("reporting-service")
   implicit val executionContext = system.dispatcher
 
   val httpActor = IO(Http)
 
-  // TODO: Proper timeouts etc.
-  implicit val timeout = Timeout(10.seconds)
-  val amqpTimeout = Timeout(10.seconds)
-
   // Could use the Java client library instead?
+  implicit val timeout = Timeout(10.seconds) // TODO: Config
   val bookDao = new HttpBookDao(httpActor, "http:localhost/catalogue/books") // TODO: Config
-
-  // TODO: Could factory out standard connection policies into the shared library.
-  // This would entail placing the configuration properties for these in a common place in the
-  // config hierarchy. We could do that with all the other settings for the RabbitMQ broker too,
-  // and have common code that creates connections to it without having to fetch out the details in each service.
 
   // TODO: Replace these with RabbitMQ implementations when available.
   class DummyMessageSender(exchangeName: String) extends EventPublisher {
@@ -81,11 +46,18 @@ object PurchaseTransformerService extends App with Configuration with Logging {
     }
   }
 
-  val emailMessageSender: EventPublisher = new DummyMessageSender(outgoingExchangeForEmailMessages)
-  val clubcardMessageSender: EventPublisher = new DummyMessageSender(outgoingExchangeForClubcardMessages)
+  val serviceConf = config.getConfig("service.purchaseTransformer")
+  logger.info(s"Starting purchase-transformer service with config: $serviceConf")
 
-  val emailMsgErrorHandler: ErrorHandler = new DummyErrorHandler(invalidMessagesForEmailQueue)
-  val clubcardMsgErrorHandler: ErrorHandler = new DummyErrorHandler(invalidMessagesForClubcardsQueue)
+  val invalidMessagesForClubcardsQueue = "Clubcard.Listener.DLQ"
+  val outgoingExchangeForClubcardMessages = "Clubcard.Collector.Exchange"
+  val clubcardMessageSender = new DummyMessageSender(outgoingExchangeForClubcardMessages)
+  val clubcardMsgErrorHandler = new DummyErrorHandler(invalidMessagesForClubcardsQueue)
+
+  val invalidMessagesForEmailQueue = "Mail.Listener.DLQ"
+  val outgoingExchangeForEmailMessages = "Mail.Sender.Exchange"
+  val emailMessageSender = new DummyMessageSender(outgoingExchangeForEmailMessages)
+  val emailMsgErrorHandler = new DummyErrorHandler(invalidMessagesForEmailQueue)
 
   // Create actors for email messages.
   val routingId = "TODO" // TODO: Get from properties.
