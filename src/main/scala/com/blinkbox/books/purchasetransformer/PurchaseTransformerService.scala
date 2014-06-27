@@ -8,10 +8,9 @@ import com.blinkboxbooks.hermes.rabbitmq._
 import com.blinkboxbooks.hermes.rabbitmq.RabbitMqConsumer.QueueConfiguration
 import com.blinkbox.books.messaging._
 import com.typesafe.scalalogging.slf4j.Logging
+import spray.can.Http
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import spray.can.Http
-import com.typesafe.config.ConfigObject
 
 /**
  * Entry point for the purchase-transformer service.
@@ -22,7 +21,7 @@ object PurchaseTransformerService extends App with Configuration with Logging {
 
   logger.info("Starting")
 
-  val connection = RabbitMq.reliableConnection()
+  val connection = RabbitMq.reliableConnection(RabbitMqConfig(config))
 
   // Initialise the actor system.
   implicit val system = ActorSystem("reporting-service")
