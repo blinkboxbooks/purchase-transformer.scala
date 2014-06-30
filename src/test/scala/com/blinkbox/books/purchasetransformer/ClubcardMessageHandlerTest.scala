@@ -19,13 +19,14 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.xml.Utility.trim
 import TestMessages._
+import akka.testkit.TestProbe
 
 @RunWith(classOf[JUnitRunner])
 class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender
   with FunSuiteLike with BeforeAndAfter with MockitoSugar {
 
   private var errorHandler: ErrorHandler = _
-  private var eventPublisher: EventPublisher = _
+  private var output: TestProbe = _
 
   private var handler: ActorRef = _
 
@@ -33,13 +34,12 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   val eventHeader = EventHeader("test")
 
   before {
-    eventPublisher = mock[EventPublisher]
-    doReturn(Future.successful(())).when(eventPublisher).publish(any[Event])
+    output = TestProbe()
     errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Event], any[Throwable])
 
     handler = system.actorOf(Props(
-      new ClubcardMessageHandler(eventPublisher, errorHandler, retryInterval)))
+      new ClubcardMessageHandler(output.ref, errorHandler, retryInterval)))
   }
 
   //
@@ -51,8 +51,8 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
       handler ! Event.xml(testMessage(2, 2, true).toString, eventHeader)
       expectMsgType[Success]
 
-      checkPublishedEvent(eventPublisher, expectedClubcardMessage)
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      checkPublishedEvent(output, expectedClubcardMessage)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -62,7 +62,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
       expectMsgType[Success]
 
       // Should not send any message if the purchase had no clubcard points.
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -91,7 +91,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
 
       expectMsgType[Success]
       verify(errorHandler).handleError(matcherEq(msg), any[SAXException])
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -104,7 +104,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
 
       expectMsgType[Success]
       verify(errorHandler).handleError(matcherEq(msg), any[IllegalArgumentException])
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 

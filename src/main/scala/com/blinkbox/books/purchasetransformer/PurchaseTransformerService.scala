@@ -5,9 +5,9 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
 import com.blinkbox.books.config.{ Configuration, RichConfig }
-import com.blinkboxbooks.hermes.rabbitmq._
-import com.blinkboxbooks.hermes.rabbitmq.RabbitMqConsumer.QueueConfiguration
-import com.blinkboxbooks.hermes.rabbitmq.RabbitMqConfirmedPublisher.PublisherConfiguration
+import com.blinkbox.books.rabbitmq._
+import com.blinkbox.books.rabbitmq.RabbitMqConsumer.QueueConfiguration
+import com.blinkbox.books.rabbitmq.RabbitMqConfirmedPublisher.PublisherConfiguration
 import com.blinkbox.books.messaging._
 import com.rabbitmq.client.Connection
 import com.typesafe.config.Config
@@ -38,6 +38,10 @@ object PurchaseTransformerService extends App with Configuration with Logging {
   // Initialise the actor system.
   implicit val system = ActorSystem("reporting-service")
   implicit val ec = system.dispatcher
+  
+  // TODO: Get from config!
+  // Provide value for this config in reference.conf in rabbitmq-ha.
+  implicit val actorTimeout = Timeout(10.seconds)
 
   // Could use the Java Book client library instead?
   val httpActor = IO(Http)
@@ -47,8 +51,8 @@ object PurchaseTransformerService extends App with Configuration with Logging {
   // TODO: Add helpers for getting scala.concurrent.Durations to common-config?
   val ClientRequestRetryInterval = serviceConf.getDuration("clientRequestInterval", TimeUnit.SECONDS).seconds
 
-  val emailMessageSender = new PublishingMessageSender(publisher(serviceConf.getConfig("emailListener.output")))
-  val emailMsgErrorHandler = new PublishingErrorHandler(publisher(serviceConf.getConfig("emailListener.error")))
+  val emailMessageSender = publisher(serviceConf.getConfig("emailListener.output"))
+  val emailMsgErrorHandler = new ActorErrorHandler(publisher(serviceConf.getConfig("emailListener.error")))
 
   val routingId = serviceConf.getString("emailListener.routingInstance")
   val templateName = serviceConf.getString("emailListener.templateName")
@@ -62,32 +66,14 @@ object PurchaseTransformerService extends App with Configuration with Logging {
     QueueConfiguration(serviceConf.getConfig("emailListener.input")), "email-msg-consumer", emailMessageHandler)))
     .tell(RabbitMqConsumer.Init, null)
 
-  // Create actors that handle Cubcard point messages.
+  // Create actors that handle Clubcard point messages.
   val clubcardMessageHandler = system.actorOf(Props(new ClubcardMessageHandler(
-    new PublishingMessageSender(publisher(serviceConf.getConfig("clubcardListener.output"))),
-    new PublishingErrorHandler(publisher(serviceConf.getConfig("clubcardListener.error"))), retryInterval)))
+    publisher(serviceConf.getConfig("clubcardListener.output")),
+    new ActorErrorHandler(publisher(serviceConf.getConfig("clubcardListener.error"))), retryInterval)))
 
   system.actorOf(Props(new RabbitMqConsumer(consumerConnection.createChannel,
     QueueConfiguration(serviceConf.getConfig("clubcardListener.input")), "clubcard-msg-consumer", clubcardMessageHandler)))
     .tell(RabbitMqConsumer.Init, null)
 
   logger.info("Started")
-
-  // For now: wrap actor in the MessageSender interface.
-  // TODO: Consider just passing the actors into the message handlers instead.
-  // Or, move these wrapper classes into the common RabbitMq library.
-  class PublishingMessageSender(publisherActor: ActorRef) extends EventPublisher {
-    implicit val timeout = Timeout(5.seconds) // TODO - get rid of this!
-    override def publish(event: Event): Future[Unit] = (publisherActor ? event).map(result => ())
-  }
-
-  // Ditto for the ErrorHandlers.
-  class PublishingErrorHandler(publisherActor: ActorRef) extends ErrorHandler {
-    implicit val timeout = Timeout(5.seconds) // TODO - get rid of this!
-    override def handleError(event: Event, e: Throwable): Future[Unit] = {
-      logger.error(s"Unrecoverable error in processing event: $event", e)
-      (publisherActor ? event).map(result => ())
-    }
-  }
-
 }

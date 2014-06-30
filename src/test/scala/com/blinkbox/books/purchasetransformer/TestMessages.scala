@@ -1,5 +1,6 @@
 package com.blinkbox.books.purchasetransformer
 
+import akka.testkit.TestProbe
 import com.blinkbox.books.messaging._
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.verify
@@ -7,6 +8,7 @@ import org.scalatest.Assertions._
 import scala.xml.Node
 import scala.xml.Utility.trim
 import scala.xml.XML
+import scala.concurrent.duration._
 
 object TestMessages {
 
@@ -19,9 +21,6 @@ object TestMessages {
 
   def isbn(id: Int) = BaseIsbn + id
   def isbns(ids: Int*) = ids.map(isbn(_).toString).toList
-
-  //  /** Create test message with given content. */
-  //  def message(content: String) = Event("consumer-tag", null, null, content.getBytes("UTF-8"))
 
   /** Parse string into a normalised XML representation that's convenient for comparisons. */
   def xml(str: String) = trim(XML.loadString(str))
@@ -80,17 +79,15 @@ object TestMessages {
       </basketItems>
     </p:purchase>
 
-  def checkPublishedEvent(publisher: EventPublisher, expectedContent: Node) {
-    val eventArgument = ArgumentCaptor.forClass(classOf[Event])
-    verify(publisher).publish(eventArgument.capture)
-    val xmlContent = eventArgument.getValue.body.asString
+  def checkPublishedEvent(output: TestProbe, expectedContent: Node) {
+    val event = output.receiveOne(1.second).asInstanceOf[Event]
 
     // TODO: Horrible hack to get around weirdnesses in XML comparison in Scala.
     // Would be nice to come up with a general solution for this. Just comparing the strings picks up insignificant
     // differences e.g. orders of attributes. Comparing the XML elements directly avoids this but has other quirks
     // that means it throws up differences where it shoudln't in some cases.
     // (I recommend the comments in scala.xml.Equality for an impression of the issues involved - and a good laugh!).
-    assert(xml(xmlContent) == expectedContent || xml(xmlContent).toString == expectedContent.toString)
+    assert(xml(event.body.asString) == expectedContent || xml(event.body.asString).toString == expectedContent.toString)
   }
 
 }

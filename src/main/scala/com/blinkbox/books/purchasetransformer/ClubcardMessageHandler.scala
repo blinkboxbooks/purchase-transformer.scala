@@ -1,6 +1,8 @@
 package com.blinkbox.books.purchasetransformer
 
 import akka.actor.ActorRef
+import akka.pattern.ask
+import akka.util.Timeout
 import com.blinkbox.books.messaging._
 import java.io.{ IOException, StringReader, StringWriter }
 import java.util.concurrent.TimeoutException
@@ -13,8 +15,10 @@ import scala.xml.XML
  * Actor that receives incoming purchase-complete messages
  * and passes on Clubcard messages.
  */
-class ClubcardMessageHandler(output: EventPublisher, errorHandler: ErrorHandler, retryInterval: FiniteDuration)
-  extends ReliableEventHandler(output, errorHandler, retryInterval) {
+class ClubcardMessageHandler(output: ActorRef, errorHandler: ErrorHandler, retryInterval: FiniteDuration)
+  extends ReliableEventHandler(errorHandler, retryInterval) {
+  
+  implicit val timeout = Timeout(retryInterval)
 
   // Use XSLT to transform the input and pass on the result to the output.
   override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] = Future {
@@ -22,7 +26,7 @@ class ClubcardMessageHandler(output: EventPublisher, errorHandler: ErrorHandler,
     val eventContext = Purchase.context(purchase);
     if (purchase.clubcardPointsAward.isDefined) {
       log.debug(s"Sending email message for userUd ${purchase.userId}, basketId ${purchase.basketId}")
-      output.publish(Event.xml(transform(event.body.asString), eventContext))
+      output ? Event.xml(transform(event.body.asString), eventContext)
     } else {
       log.debug(s"Ignoring purchase message for userUd ${purchase.userId}, basketId ${purchase.basketId}, with no clubcard points awarded")
       Future.successful(())

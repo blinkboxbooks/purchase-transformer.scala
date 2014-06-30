@@ -2,7 +2,9 @@ package com.blinkbox.books.purchasetransformer
 
 import akka.actor.ActorRef
 import akka.actor.Status.{ Success, Failure }
-import com.blinkboxbooks.hermes.rabbitmq._
+import akka.pattern.ask
+import akka.util.Timeout
+import com.blinkbox.books.rabbitmq._
 import com.blinkbox.books.messaging._
 import java.io.IOException
 import java.util.concurrent.TimeoutException
@@ -14,10 +16,12 @@ import scala.concurrent.Future
  * gets additional information about books purchased,
  * and passes on Email messages.
  */
-class EmailMessageHandler(bookDao: BookDao, output: EventPublisher, errorHandler: ErrorHandler,
+class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: ErrorHandler,
   routingId: String, templateName: String, retryInterval: FiniteDuration)
-  extends ReliableEventHandler(output, errorHandler, retryInterval) {
+  extends ReliableEventHandler(errorHandler, retryInterval) {
 
+  implicit val timeout = Timeout(retryInterval)
+  
   override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] =
     for (
       purchase <- Future(Purchase.fromXml(event.body.content));
@@ -26,8 +30,8 @@ class EmailMessageHandler(bookDao: BookDao, output: EventPublisher, errorHandler
       books <- bookFuture;
       emailContent = buildEmailContent(purchase, books);
       eventContext = Purchase.context(purchase);
-      sendResult <- output.publish(Event.xml(emailContent, eventContext))
-    ) yield sendResult
+      sendResult <- output ? Event.xml(emailContent, eventContext)
+    ) yield ()
 
   // TODO: check
   override protected def isTemporaryFailure(e: Throwable) =

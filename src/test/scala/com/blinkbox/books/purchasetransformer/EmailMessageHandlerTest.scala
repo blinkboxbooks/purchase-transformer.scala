@@ -2,7 +2,7 @@ package com.blinkbox.books.purchasetransformer
 
 import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.actor.Status.{ Success, Failure }
-import akka.testkit.{ ImplicitSender, TestKit }
+import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
 import com.blinkbox.books.messaging._
 import java.io.IOException
 import org.junit.runner.RunWith
@@ -31,7 +31,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   import EmailMessageHandlerTests._
 
   private var errorHandler: ErrorHandler = _
-  private var eventPublisher: EventPublisher = _
+  private var output: TestProbe = _
   private var bookDao: BookDao = _
 
   private var handler: ActorRef = _
@@ -40,13 +40,12 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
 
   before {
     bookDao = mock[BookDao]
-    eventPublisher = mock[EventPublisher]
-    doReturn(Future.successful(())).when(eventPublisher).publish(any[Event])
+    output = TestProbe()
     errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Event], any[Throwable])
 
     handler = system.actorOf(Props(
-      new EmailMessageHandler(bookDao, eventPublisher, errorHandler, routingId, templateName, retryInterval)))
+      new EmailMessageHandler(bookDao, output.ref, errorHandler, routingId, templateName, retryInterval)))
   }
 
   //
@@ -59,12 +58,21 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
 
     within(500.millis) {
       handler ! Event.xml(testMessage(2, 2, true).toString, eventHeader)
+
+      // Check the message that came out the other end.
+      checkPublishedEvent(output, expectedEmailMessage(2, 2, true))
+
+      // Make the test probe that is the output send a Success notification back.
+      output.send(output.lastSender, Success())
+
+      // Check that we passed on the right parameters to the book client.
+      verify(bookDao).getBooks(books)
+
+      // Check the result of the overall flow.
       expectMsgType[Success]
 
-      verify(bookDao).getBooks(books)
-      checkPublishedEvent(eventPublisher, expectedEmailMessage(2, 2, true))
-
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      // Should have seen no errors here.
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -74,10 +82,12 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
 
     within(500.millis) {
       handler ! Event.xml(testMessage(1, 1, false).toString, eventHeader)
+      checkPublishedEvent(output, expectedEmailMessage(1, 1, false))
+
+      output.send(output.lastSender, Success())
       expectMsgType[Success]
 
-      checkPublishedEvent(eventPublisher, expectedEmailMessage(1, 1, false))
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -89,10 +99,12 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
 
     within(500.millis) {
       handler ! Event.xml(testMessage(1, 1, true).toString, eventHeader)
+      checkPublishedEvent(output, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
+      
+      output.send(output.lastSender, Success())
       expectMsgType[Success]
-
-      checkPublishedEvent(eventPublisher, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -108,7 +120,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
 
       verify(errorHandler).handleError(matcherEq(msg), any[SAXException])
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -120,7 +132,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
 
       checkRecordedError[IllegalArgumentException](msg)
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
@@ -134,11 +146,10 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       expectMsgType[Success]
 
       checkRecordedError[IllegalArgumentException](msg)
-      verifyNoMoreInteractions(errorHandler, eventPublisher)
+      verifyNoMoreInteractions(errorHandler)
     }
   }
 
-  // TODO: Ditch this, seeing as we only check the class of exception?
   private def checkRecordedError[T <: Throwable](msg: Event)(implicit manifest: Manifest[T]): Unit = {
     val expectedExceptionClass = manifest.erasure.asInstanceOf[Class[T]]
     val error = ArgumentCaptor.forClass(classOf[Exception])
