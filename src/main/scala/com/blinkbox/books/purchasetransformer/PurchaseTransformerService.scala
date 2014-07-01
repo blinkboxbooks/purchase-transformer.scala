@@ -31,18 +31,17 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
 
   log.info(s"Starting purchase-transformer service with config: $serviceConf")
 
-  log.debug(s"Can I even see this???")
-  
   // Use separate connections for consumers and publishers.
   def newConnection() = RabbitMq.reliableConnection(RabbitMqConfig(config))
   val publisherConnection = newConnection()
   val consumerConnection = newConnection()
 
-  private def publisher(config: Config) =
-    system.actorOf(Props(new RabbitMqConfirmedPublisher(publisherConnection.createChannel(), PublisherConfiguration(config))))
+  private def publisher(config: Config, actorName: String) =
+    system.actorOf(Props(new RabbitMqConfirmedPublisher(
+      publisherConnection.createChannel(), PublisherConfiguration(config))), name = actorName)
 
   // Initialise the actor system.
-  implicit val system = ActorSystem("reporting-service")
+  implicit val system = ActorSystem("purchase-transformer-service")
   implicit val ec = system.dispatcher
 
   // TODO: Get from config!
@@ -57,28 +56,33 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
   // TODO: Add helpers for getting scala.concurrent.Durations to common-config?
   val ClientRequestRetryInterval = serviceConf.getDuration("clientRequestInterval", TimeUnit.SECONDS).seconds
 
-  val emailMessageSender = publisher(serviceConf.getConfig("emailListener.output"))
-  val emailMsgErrorHandler = new ActorErrorHandler(publisher(serviceConf.getConfig("emailListener.error")))
+  val emailMessageSender = publisher(serviceConf.getConfig("emailListener.output"), "email-publisher")
 
   val routingId = serviceConf.getString("emailListener.routingInstance")
   val templateName = serviceConf.getString("emailListener.templateName")
   val retryInterval = serviceConf.getDuration("clientRequestTimeout", TimeUnit.SECONDS).seconds
 
-  // Create actors for email messages.
+  log.debug("Initialising actors")
+
+  // Create actors that handle email messages.
+  val emailMsgErrorHandler = new ActorErrorHandler(publisher(serviceConf.getConfig("emailListener.error"), "email-error-publisher"))
   val emailMessageHandler = system.actorOf(Props(
-    new EmailMessageHandler(bookDao, emailMessageSender, emailMsgErrorHandler, routingId, templateName, retryInterval)))
+    new EmailMessageHandler(bookDao, emailMessageSender, emailMsgErrorHandler, routingId, templateName, retryInterval)),
+    name = "email-message-handler")
 
   system.actorOf(Props(new RabbitMqConsumer(consumerConnection.createChannel,
-    QueueConfiguration(serviceConf.getConfig("emailListener.input")), "email-msg-consumer", emailMessageHandler)))
+    QueueConfiguration(serviceConf.getConfig("emailListener.input")), "email-msg-consumer", emailMessageHandler)), name = "email-listener")
     .tell(RabbitMqConsumer.Init, null)
 
   // Create actors that handle Clubcard point messages.
+  val clubcardMsgErrorHandler = new ActorErrorHandler(publisher(serviceConf.getConfig("clubcardListener.error"), "clubcard-error-publisher"))
   val clubcardMessageHandler = system.actorOf(Props(new ClubcardMessageHandler(
-    publisher(serviceConf.getConfig("clubcardListener.output")),
-    new ActorErrorHandler(publisher(serviceConf.getConfig("clubcardListener.error"))), retryInterval)))
+    publisher(serviceConf.getConfig("clubcardListener.output"), "clubcard-publisher"),
+    clubcardMsgErrorHandler, retryInterval)),
+    name = "clubcard-message-handler")
 
   system.actorOf(Props(new RabbitMqConsumer(consumerConnection.createChannel,
-    QueueConfiguration(serviceConf.getConfig("clubcardListener.input")), "clubcard-msg-consumer", clubcardMessageHandler)))
+    QueueConfiguration(serviceConf.getConfig("clubcardListener.input")), "clubcard-msg-consumer", clubcardMessageHandler)), name = "clubcard-listener")
     .tell(RabbitMqConsumer.Init, null)
 
   log.info("Started")
