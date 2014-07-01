@@ -10,7 +10,7 @@ libraryDependencies ++= {
   val akkaV = "2.3.3"
   val sprayV = "1.3.1"
   Seq(
-  "com.blinkbox.books" %% "common-config"        % "0.6.0",
+  "com.blinkbox.books" %% "common-config"        % "0.6.2",
   "com.blinkbox.books" %% "common-messaging"     % "0.1.0",
   "com.blinkbox.books.hermes" %% "rabbitmq-ha"    % "3.0.0",
   "com.typesafe"       %% "scalalogging-slf4j"   % "1.0.1",
@@ -26,6 +26,7 @@ libraryDependencies ++= {
   "com.h2database"      % "h2"                   % "1.3.173" % "test",
   "org.mockito"         % "mockito-core"         % "1.9.5" % "test",
   "com.typesafe.akka"  %% "akka-actor"           % akkaV,
+  "com.typesafe.akka"  %% "akka-slf4j"           % akkaV,
   "com.typesafe.akka"  %% "akka-testkit"         % akkaV % "test",
   "joda-time"           % "joda-time"            % "2.3",
   "org.joda"            % "joda-convert"         % "1.6",

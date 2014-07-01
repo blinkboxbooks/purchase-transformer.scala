@@ -5,14 +5,15 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
 import com.blinkbox.books.config.{ Configuration, RichConfig }
+import com.blinkbox.books.logging.Loggers
 import com.blinkbox.books.rabbitmq._
 import com.blinkbox.books.rabbitmq.RabbitMqConsumer.QueueConfiguration
 import com.blinkbox.books.rabbitmq.RabbitMqConfirmedPublisher.PublisherConfiguration
 import com.blinkbox.books.messaging._
 import com.rabbitmq.client.Connection
 import com.typesafe.config.Config
-import com.typesafe.scalalogging.slf4j.Logging
 import java.util.concurrent.TimeUnit
+import org.slf4j.LoggerFactory
 import spray.can.Http
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -20,13 +21,18 @@ import scala.concurrent.Future
 /**
  * Entry point for the purchase-transformer service.
  */
-object PurchaseTransformerService extends App with Configuration with Logging {
+object PurchaseTransformerService extends App with Configuration /*with Loggers*/ {
+
+  val log = LoggerFactory.getLogger(getClass)
 
   val Originator = "purchase-transformer"
 
   val serviceConf = config.getConfig("service.purchaseTransformer")
-  logger.info(s"Starting purchase-transformer service with config: $serviceConf")
 
+  log.info(s"Starting purchase-transformer service with config: $serviceConf")
+
+  log.debug(s"Can I even see this???")
+  
   // Use separate connections for consumers and publishers.
   def newConnection() = RabbitMq.reliableConnection(RabbitMqConfig(config))
   val publisherConnection = newConnection()
@@ -38,7 +44,7 @@ object PurchaseTransformerService extends App with Configuration with Logging {
   // Initialise the actor system.
   implicit val system = ActorSystem("reporting-service")
   implicit val ec = system.dispatcher
-  
+
   // TODO: Get from config!
   // Provide value for this config in reference.conf in rabbitmq-ha.
   implicit val actorTimeout = Timeout(10.seconds)
@@ -75,5 +81,5 @@ object PurchaseTransformerService extends App with Configuration with Logging {
     QueueConfiguration(serviceConf.getConfig("clubcardListener.input")), "clubcard-msg-consumer", clubcardMessageHandler)))
     .tell(RabbitMqConsumer.Init, null)
 
-  logger.info("Started")
+  log.info("Started")
 }
