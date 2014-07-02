@@ -44,10 +44,6 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
   implicit val system = ActorSystem("purchase-transformer-service")
   implicit val ec = system.dispatcher
 
-  // TODO: Get from config!
-  // Provide value for this config in reference.conf in rabbitmq-ha.
-  implicit val actorTimeout = Timeout(10.seconds)
-
   // Could use the Java Book client library instead?
   val httpActor = IO(Http)
   val ClientRequestTimeout = Timeout(serviceConf.getDuration("clientRequestInterval", TimeUnit.SECONDS).seconds)
@@ -61,6 +57,8 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
   val retryInterval = serviceConf.getDuration("clientRequestTimeout", TimeUnit.SECONDS).seconds
 
   log.debug("Initialising actors")
+
+  implicit val actorTimeout = Timeout(serviceConf.getDuration("actorTimeout", TimeUnit.SECONDS).seconds)
 
   // Create actors that handle email messages.
   val emailMessageSender = publisher(serviceConf.getConfig("emailListener.output"), "email-publisher")
