@@ -8,8 +8,10 @@ import com.blinkbox.books.rabbitmq._
 import com.blinkbox.books.messaging._
 import java.io.IOException
 import java.util.concurrent.TimeoutException
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import spray.can.Http.ConnectionException
 
 /**
  * Actor that receives incoming purchase-complete messages,
@@ -33,9 +35,11 @@ class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: Erro
       sendResult <- output ? Event.xml(emailContent, eventContext)
     ) yield ()
 
-  // TODO: check
-  override protected def isTemporaryFailure(e: Throwable) =
-    e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException]
+  // Consider the error temporary if the exception or its root cause is an IO exception or timeout.
+  @tailrec
+  final override def isTemporaryFailure(e: Throwable) =
+    e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException] || e.isInstanceOf[ConnectionException] ||
+      Option(e.getCause).isDefined && isTemporaryFailure(e.getCause)
 
   /**
    * Generate output message.

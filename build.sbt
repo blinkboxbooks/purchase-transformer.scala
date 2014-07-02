@@ -11,8 +11,8 @@ libraryDependencies ++= {
   val sprayV = "1.3.1"
   Seq(
   "com.blinkbox.books" %% "common-config"        % "0.6.2",
-  "com.blinkbox.books" %% "common-messaging"     % "0.2.0",
-  "com.blinkbox.books.hermes" %% "rabbitmq-ha"    % "3.0.0",
+  "com.blinkbox.books" %% "common-messaging"     % "0.2.1",
+  "com.blinkbox.books.hermes" %% "rabbitmq-ha"    % "3.0.2",
   "ch.qos.logback"      % "logback-classic"      % "1.1.2",
   "io.spray"            % "spray-client"         % sprayV,
   "io.spray"            % "spray-http"           % sprayV,

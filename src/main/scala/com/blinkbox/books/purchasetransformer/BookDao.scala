@@ -1,18 +1,17 @@
 package com.blinkbox.books.purchasetransformer
 
-import com.typesafe.scalalogging.slf4j.Logging
-import scala.concurrent.{ Promise, Future, ExecutionContext }
 import akka.util.Timeout
 import akka.actor.ActorRef
 import akka.pattern.ask
+import com.typesafe.scalalogging.slf4j.Logging
+import java.io.IOException
 import org.json4s.jackson.JsonMethods._
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
+import scala.concurrent.{ Promise, Future, ExecutionContext }
 import spray.http.HttpResponse
 import spray.http.StatusCodes
 import spray.httpx.RequestBuilding._
-import org.json4s.jvalue2extractable
-import org.json4s.string2JsonInput
 
 //
 // NOTE! This client class for the book services is copied from the reporting service. 
@@ -50,11 +49,9 @@ trait BookDao {
 /**
  * Implementation of book DAO that gets book data from book service.
  */
-class HttpBookDao(httpActor: ActorRef, baseUrl: String)(
+class HttpBookDao(httpActor: ActorRef, url: String)(
   implicit val timeout: Timeout, implicit val ec: ExecutionContext)
   extends BookDao with Logging {
-
-  import HttpBookDao._
 
   implicit val formats = Serialization.formats(NoTypeHints)
 
@@ -62,16 +59,20 @@ class HttpBookDao(httpActor: ActorRef, baseUrl: String)(
     if (ids.isEmpty) {
       return Promise.failed(new BookException("No book IDs given")).future
     }
-    val request = Get(baseUrl + HttpBookDao.BOOK_SERVICE_URL + "?" + queryParams(ids))
+    val request = Get(url + "?" + queryParams(ids))
     (httpActor ? request)
       .mapTo[HttpResponse]
-      .transform(response =>
-        convertBookResponse(response), wrapInBookException("Error getting book data"))
+      .map(convertBookResponse(_))
   }
 
   private def convertBookResponse(response: HttpResponse): BookList = response match {
     case HttpResponse(StatusCodes.OK, entity, _, _) =>
       parse(response.entity.asString).extract[BookList]
+    case resp @ HttpResponse(status, entity, _, _) if (502 to 599).contains(status.intValue) => {
+      val msg = s"HTTP response status indicating temporary failure: $status, content=${entity.asString take 1000} ..."
+      logger.debug(msg)
+      throw new IOException(msg)
+    }
     case resp @ HttpResponse(status, entity, _, _) => {
       val msg = s"Unexpected HTTP response status: $status, content=${entity.asString take 1000} ..."
       logger.debug(msg)
@@ -81,19 +82,7 @@ class HttpBookDao(httpActor: ActorRef, baseUrl: String)(
   }
 
   /** Helper function for generating request parameters. */
-  private def queryParams(values: Seq[Any]): String =
-    (values.map(isbn => "id=" + isbn)).mkString("&")
+  private def queryParams(values: Seq[Any]): String = values.map(isbn => "id=" + isbn).mkString("&")
 
 }
 
-object HttpBookDao {
-
-  def wrapInBookException(msg: String)(t: Throwable): BookException = t match {
-    case e: BookException => e
-    case t @ _ => new BookException(msg, t)
-  }
-
-  // TODO: This needs to be configurable.
-  val BOOK_SERVICE_URL = "/service/catalogue/books"
-
-}

@@ -56,8 +56,6 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
   // TODO: Add helpers for getting scala.concurrent.Durations to common-config?
   val ClientRequestRetryInterval = serviceConf.getDuration("clientRequestInterval", TimeUnit.SECONDS).seconds
 
-  val emailMessageSender = publisher(serviceConf.getConfig("emailListener.output"), "email-publisher")
-
   val routingId = serviceConf.getString("emailListener.routingInstance")
   val templateName = serviceConf.getString("emailListener.templateName")
   val retryInterval = serviceConf.getDuration("clientRequestTimeout", TimeUnit.SECONDS).seconds
@@ -65,6 +63,7 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
   log.debug("Initialising actors")
 
   // Create actors that handle email messages.
+  val emailMessageSender = publisher(serviceConf.getConfig("emailListener.output"), "email-publisher")
   val emailMsgErrorHandler = new ActorErrorHandler(publisher(serviceConf.getConfig("emailListener.error"), "email-error-publisher"))
   val emailMessageHandler = system.actorOf(Props(
     new EmailMessageHandler(bookDao, emailMessageSender, emailMsgErrorHandler, routingId, templateName, retryInterval)),
@@ -75,11 +74,10 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
     .tell(RabbitMqConsumer.Init, null)
 
   // Create actors that handle Clubcard point messages.
+  val clubcardMessageSender = publisher(serviceConf.getConfig("clubcardListener.output"), "clubcard-publisher")
   val clubcardMsgErrorHandler = new ActorErrorHandler(publisher(serviceConf.getConfig("clubcardListener.error"), "clubcard-error-publisher"))
   val clubcardMessageHandler = system.actorOf(Props(new ClubcardMessageHandler(
-    publisher(serviceConf.getConfig("clubcardListener.output"), "clubcard-publisher"),
-    clubcardMsgErrorHandler, retryInterval)),
-    name = "clubcard-message-handler")
+    clubcardMessageSender, clubcardMsgErrorHandler, retryInterval)), name = "clubcard-message-handler")
 
   system.actorOf(Props(new RabbitMqConsumer(consumerConnection.createChannel,
     QueueConfiguration(serviceConf.getConfig("clubcardListener.input")), "clubcard-msg-consumer", clubcardMessageHandler)), name = "clubcard-listener")

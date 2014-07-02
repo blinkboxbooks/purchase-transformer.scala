@@ -10,6 +10,7 @@ import javax.xml.transform.stream.{ StreamSource, StreamResult }
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.xml.XML
+import scala.annotation.tailrec
 
 /**
  * Actor that receives incoming purchase-complete messages
@@ -17,7 +18,7 @@ import scala.xml.XML
  */
 class ClubcardMessageHandler(output: ActorRef, errorHandler: ErrorHandler, retryInterval: FiniteDuration)
   extends ReliableEventHandler(errorHandler, retryInterval) {
-  
+
   implicit val timeout = Timeout(retryInterval)
 
   // Use XSLT to transform the input and pass on the result to the output.
@@ -49,7 +50,10 @@ class ClubcardMessageHandler(output: ActorRef, errorHandler: ErrorHandler, retry
     }
   }
 
-  // TODO: Check!
-  override def isTemporaryFailure(e: Throwable) = e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException]
+  // Consider the error temporary if the exception or its root cause is an IO exception or timeout.
+  @tailrec
+  final override def isTemporaryFailure(e: Throwable) =
+    e.isInstanceOf[IOException] || e.isInstanceOf[TimeoutException] ||
+      Option(e.getCause).isDefined && isTemporaryFailure(e.getCause)
 
 }
