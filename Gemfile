@@ -16,7 +16,7 @@ group :development, :test do
   #gem "sequel"
   #gem "sqlite3"
   gem "yard"
-  #gem "thin"
+  gem "thin"
   gem "rack-test"
   gem "timecop"
   gem "sinatra"
