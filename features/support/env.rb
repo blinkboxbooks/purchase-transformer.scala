@@ -18,8 +18,7 @@ $amqp_ch = $amqp_conn.create_channel
 web_services_port = '9128' #TODO read from properties file
 raise "No port number for mock web services found in configuration" unless web_services_port
 Thread.new do
-  puts "Running web server with mock services on port ", web_services_port
-  MockBookService.run! host: 'localhost', port: web_services_port
+  MockBookService.run! (host: 'localhost', port: web_services_port)
 end
 
 

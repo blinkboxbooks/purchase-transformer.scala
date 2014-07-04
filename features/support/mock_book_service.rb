@@ -4,9 +4,9 @@ require 'cgi'
 
 # Special ISBN:
 # used to signal that a book with an unknown contributor should be returned.
-UNKNOWN_CONTRIBUTOR_ID = "404404"
+UNKNOWN_CONTRIBUTOR_ID ||= "404404"
 # used to signal that a book without any author (contributor) should be returned.
-NO_AUTHOR_ID = "505505"
+NO_AUTHOR_ID ||= "505505"
 
 # This class specifies a web service that responds to book, contributor and publisher
 # requests, returning simple responses.
