@@ -58,5 +58,23 @@ module KnowsAboutReportingQueueHelpers
   def mail_sender_queue
     @@mail_sender_queue
   end
+
+  TIMEOUT_SECONDS = 2
+  POLLING_INTERVAL_SECONDS = 0.1
+
+  def subscribe_to_queue(queue)
+    time_limit = Time.now + TIMEOUT_SECONDS
+    @received_message = nil
+
+    until @received_message!=nil || Time.now >= time_limit
+      queue.subscribe do |delivery_info, metadata, payload|
+        @received_message = payload
+        sleep POLLING_INTERVAL_SECONDS
+      end
+    end
+
+    @received_message
+  end
 end
+
 World(KnowsAboutReportingQueueHelpers)
