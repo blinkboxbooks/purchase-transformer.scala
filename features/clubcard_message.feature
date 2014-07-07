@@ -23,12 +23,8 @@ Feature: Sending a clubcard message when a purchase is completed
     When the payment is sent for clubcard processing
     Then a valid clubcard message is generated and sent
 
-#  Scenario: Missing ISBN
-#    Given a user has bought multiple books under a single purchase
-#    When the payment is sent for clubcard processing
-#    Then a valid clubcard message is generated and sent
-#
-#  Scenario:
-#    Given a user has bought multiple books under a single purchase
-#    When the payment is sent for clubcard processing
-#    Then a valid clubcard message is generated and sent
+  Scenario:
+    Given a user has purchased a book with no ISBN
+    When the payment is sent for clubcard processing
+    Then a clubcard message is not generated
+    And the original payment is stored for later clubcard processing

@@ -237,3 +237,43 @@ $purchase_complete_mesage_two_books = '<?xml version="1.0" encoding="UTF-8" stan
 $expected_clubcard_two_books_message = $clubcard_message_template.gsub(/%%POINTS%%/, '7')
 
 ####################################################################
+#NO ISBN
+$purchase_complete_message_no_isbn = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
+    <userId>76</userId>
+    <firstName>mohamed</firstName>
+    <lastName>Ahmed</lastName>
+    <email>mohameda@blinkbox.com</email>
+    <basketId>424056</basketId>
+    <deviceId>555001</deviceId>
+    <clubcardNumber>634004078527573552</clubcardNumber>
+    <clubcardPointsAward>3</clubcardPointsAward>
+    <transactionDate>2013-10-15T13:32:51</transactionDate>
+    <totalPrice>
+        <amount>3.63</amount>
+        <currency>GBP</currency>
+    </totalPrice>
+    <billingProviders>
+        <billingProvider>
+            <name>braintree</name>
+            <region>UK</region>
+            <payment>
+                <amount>3.63</amount>
+                <currency>GBP</currency>
+            </payment>
+        </billingProvider>
+    </billingProviders>
+    <basketItems>
+        <basketItem>
+            <publisherId>8</publisherId>
+            <salePrice>
+                <amount>3.63</amount>
+                <currency>GBP</currency>
+            </salePrice>
+            <listPrice>
+                <amount>3.63</amount>
+                <currency>GBP</currency>
+            </listPrice>
+        </basketItem>
+    </basketItems>
+</ns2:purchase>'
