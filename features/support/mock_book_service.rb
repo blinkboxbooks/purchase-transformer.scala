@@ -12,7 +12,7 @@ NO_AUTHOR_ID ||= "505505"
 # requests, returning simple responses.
 class MockBookService < Sinatra::Base
 
-  get '/service/catalogue/books', provides: :json do
+  get '/catalogue/books', provides: :json do
     all_params = CGI::parse(request.query_string)
     ids = all_params["id"].map { |id| id.to_i }
     halt 404, "Requested ID 404 not found" if ids.include? 404

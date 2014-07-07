@@ -17,6 +17,35 @@ $clubcard_message_template =
    <transactionValue>3.63</transactionValue>
 </ClubcardMessage>'
 
+$mail_message_template =
+    '<sendEmail r:messageId="receipt-76-424056" r:instance="qa.mobcastdev.com" r:originator="bookStore" xmlns:r="http://schemas.blinkbox.com/books/routing/v1" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1">
+        <template>receipt</template>
+        <to>
+          <recipient>
+            <name>mohamed</name>
+            <email>mohameda@blinkbox.com</email>
+          </recipient>
+        </to>
+        <templateVariables>
+          <templateVariable>
+            <key>salutation</key>
+            <value>mohamed</value>
+          </templateVariable>
+          <templateVariable>
+            <key>bookTitle</key>
+            <value>Title-%%ISBN%%</value>
+          </templateVariable>
+          <templateVariable>
+            <key>author</key>
+            <value>Author-%%ISBN%%</value>
+          </templateVariable>
+          <templateVariable>
+            <key>price</key>
+            <value>3.63</value>
+          </templateVariable>
+        </templateVariables>
+      </sendEmail>'
+
 ####################################################################
 #Standard valid messages
 $purchase_complete_mesage = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -148,36 +177,7 @@ $purchase_complete_mesage_split_payment = '<?xml version="1.0" encoding="UTF-8" 
 </ns2:purchase>'
 
 $expected_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3')
-
-$expected_email_message =
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<sendEmail r:messageId="receipt-76-424056" r:instance="email.routing.instance" r:originator="bookStore" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1" xmlns:r="http://schemas.blinkbox.com/books/routing/v1">
-    <template>receipt</template>
-    <to>
-        <recipient>
-            <name>mohamed</name>
-            <email>mohameda@blinkbox.com</email>
-        </recipient>
-    </to>
-    <templateVariables>
-        <templateVariable>
-            <key>salutation</key>
-            <value>mohamed</value>
-        </templateVariable>
-        <templateVariable>
-            <key>bookTitle</key>
-            <value>Northanger Abbey</value>
-        </templateVariable>
-        <templateVariable>
-            <key>author</key>
-            <value>Jane Austen</value>
-        </templateVariable>
-        <templateVariable>
-            <key>price</key>
-            <value>3.63</value>
-        </templateVariable>
-    </templateVariables>
-</sendEmail>'
+$expected_mail_message = $mail_message_template.gsub(/%%ISBN%%/, '9780007279616')
 
 ####################################################################
 #Multiple books under single purchase messages
@@ -237,6 +237,3 @@ $purchase_complete_mesage_two_books = '<?xml version="1.0" encoding="UTF-8" stan
 $expected_clubcard_two_books_message = $clubcard_message_template.gsub(/%%POINTS%%/, '7')
 
 ####################################################################
-
-
-
