@@ -6,4 +6,4 @@ Feature: Sending a clubcard message when a purchase is completed
   Scenario: Sending clubcard message when purchase complete is valid
     Given a successful purchase of a book
     When the payment is sent for clubcard processing
-    Then a valid clubcard message is generated and sentjira
+    Then a valid clubcard message is generated and sent
