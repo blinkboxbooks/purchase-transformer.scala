@@ -1,3 +1,24 @@
+####################################################################
+#Templates
+
+$clubcard_message_template =
+    '<?xml version="1.0" encoding="UTF-8"?>
+<ClubcardMessage xmlns="http://schemas.blinkboxbooks.com/events/clubcard/v1"
+                 xmlns:r="http://schemas.blinkboxbooks.com/messaging/routing/v1"
+                 xmlns:v="http://schemas.blinkboxbooks.com/messaging/versioning"
+                 r:originator="purchasing-service"
+                 v:version="1.0">
+   <userId>76</userId>
+   <clubcardNumber>634004078527573552</clubcardNumber>
+   <points>%%POINTS%%</points>
+   <transactions>9780007279616</transactions>
+   <transactionDate>2013-10-15T13:32:51</transactionDate>
+   <reason>Purchased basket #424056</reason>
+   <transactionValue>3.63</transactionValue>
+</ClubcardMessage>'
+
+####################################################################
+#Standard valid messages
 $purchase_complete_mesage = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
@@ -86,7 +107,7 @@ $purchase_complete_mesage_split_payment = '<?xml version="1.0" encoding="UTF-8" 
     <basketId>424056</basketId>
     <deviceId>555001</deviceId>
     <clubcardNumber>634004078527573552</clubcardNumber>
-    <clubcardPointsAward>2</clubcardPointsAward>
+    <clubcardPointsAward>3</clubcardPointsAward>
     <transactionDate>2013-10-15T13:32:51</transactionDate>
     <totalPrice>
         <amount>3.63</amount>
@@ -126,21 +147,7 @@ $purchase_complete_mesage_split_payment = '<?xml version="1.0" encoding="UTF-8" 
     </basketItems>
 </ns2:purchase>'
 
-$expected_clubcard_message =
-'<?xml version="1.0" encoding="UTF-8"?>
-<ClubcardMessage xmlns="http://schemas.blinkboxbooks.com/events/clubcard/v1"
-                 xmlns:r="http://schemas.blinkboxbooks.com/messaging/routing/v1"
-                 xmlns:v="http://schemas.blinkboxbooks.com/messaging/versioning"
-                 r:originator="purchasing-service"
-                 v:version="1.0">
-   <userId>76</userId>
-   <clubcardNumber>634004078527573552</clubcardNumber>
-   <points>3</points>
-   <transactions>9780007279616</transactions>
-   <transactionDate>2013-10-15T13:32:51</transactionDate>
-   <reason>Purchased basket #424056</reason>
-   <transactionValue>3.63</transactionValue>
-</ClubcardMessage>'
+$expected_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3')
 
 $expected_email_message =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -173,7 +180,7 @@ $expected_email_message =
 </sendEmail>'
 
 ####################################################################
-
+#Multiple books under single purchase messages
 $purchase_complete_mesage_two_books = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
@@ -226,6 +233,8 @@ $purchase_complete_mesage_two_books = '<?xml version="1.0" encoding="UTF-8" stan
         </basketItem>
     </basketItems>
 </ns2:purchase>'
+
+$expected_clubcard_two_books_message = $clubcard_message_template.gsub(/%%POINTS%%/, '7')
 
 ####################################################################
 

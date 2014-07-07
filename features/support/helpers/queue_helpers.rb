@@ -19,6 +19,37 @@ module KnowsAboutReportingQueueHelpers
   @@mail_sender_queue.bind("Mail.Sender.Exchange")
 
 
+  def setup_queues
+    @@clubcard_collector_exchange = $amqp_ch.topic("Clubcard.Collector.Exchange", durable: true)
+    @@clubcard_collector_exchange = $amqp_ch.topic("Clubcard.Listener.Exchange", durable: true)
+
+    @@mail_listener_exchange = $amqp_ch.topic("Mail.Listener.Exchange", durable: true)
+    @@mail_sender_exchange = $amqp_ch.topic("Mail.Sender.Exchange", durable: true)
+
+    @@clubcard_collector_queue = $amqp_ch.queue("Clubcard.Collector.Queue", durable: true, auto_delete: false)
+    @@clubcard_collector_queue.bind("Clubcard.Collector.Exchange")
+
+    @@clubcard_listener_queue = $amqp_ch.queue("Clubcard.Listener.Queue", durable: true, auto_delete: false)
+    @@clubcard_listener_queue.bind("Clubcard.Listener.Exchange")
+    @@clubcard_listener_dlq = $amqp_ch.queue("Clubcard.Listener.DLQ", durable: true, auto_delete: false)
+
+    @@mail_listener_queue = $amqp_ch.queue("Mail.Listener.Queue", durable: true, auto_delete: false)
+    @@mail_listener_queue.bind("Mail.Listener.Exchange")
+    @@mail_listener_dlq= $amqp_ch.queue("Mail.Listener.DLQ", durable: true, auto_delete: false)
+    @@mail_sender_queue= $amqp_ch.queue("Mail.Sender.Queue", durable: true, auto_delete: false)
+    @@mail_sender_queue.bind("Mail.Sender.Exchange")
+  end
+
+  def purge_queues
+    @@clubcard_collector_queue.purge
+    @@clubcard_listener_queue.purge
+    @@clubcard_listener_dlq.purge
+
+    @@mail_listener_queue.purge
+    @@mail_listener_dlq.purge
+    @@mail_sender_queue.purge
+  end
+
   def clubcard_collector_exchange
     @@clubcard_collector_exchange
   end
@@ -59,7 +90,7 @@ module KnowsAboutReportingQueueHelpers
     @@mail_sender_queue
   end
 
-  TIMEOUT_SECONDS = 2
+  TIMEOUT_SECONDS = 1
   POLLING_INTERVAL_SECONDS = 0.1
 
   def subscribe_to_queue(queue)
@@ -67,12 +98,11 @@ module KnowsAboutReportingQueueHelpers
     @received_message = nil
 
     until @received_message!=nil || Time.now >= time_limit
-      queue.subscribe do |delivery_info, metadata, payload|
+      queue.pop do |delivery_info, metadata, payload|
         @received_message = payload
         sleep POLLING_INTERVAL_SECONDS
       end
     end
-
     @received_message
   end
 end
