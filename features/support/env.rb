@@ -20,7 +20,7 @@ raise "No port number for mock web services found in configuration" unless web_s
 Thread.new do
   MockBookService.run! host: 'localhost', port: web_services_port
 end
-
+sleep(0.1) until MockBookService.running?
 
 # Clean up.
 at_exit do

@@ -48,7 +48,7 @@ $mail_message_template =
 
 ####################################################################
 #Standard valid messages
-$purchase_complete_mesage = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+$purchase_complete_message = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -89,7 +89,7 @@ $purchase_complete_mesage = '<?xml version="1.0" encoding="UTF-8" standalone="ye
     </basketItems>
 </ns2:purchase>'
 
-$purchase_complete_mesage_no_clubcard = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+$purchase_complete_message_no_clubcard = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -127,7 +127,7 @@ $purchase_complete_mesage_no_clubcard = '<?xml version="1.0" encoding="UTF-8" st
     </basketItems>
 </ns2:purchase>'
 
-$purchase_complete_mesage_split_payment = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+$purchase_complete_message_split_payment = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -181,7 +181,7 @@ $expected_mail_message = $mail_message_template.gsub(/%%ISBN%%/, '9780007279616'
 
 ####################################################################
 #Multiple books under single purchase messages
-$purchase_complete_mesage_two_books = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+$purchase_complete_message_two_books = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -277,3 +277,6 @@ $purchase_complete_message_no_isbn = '<?xml version="1.0" encoding="UTF-8" stand
         </basketItem>
     </basketItems>
 </ns2:purchase>'
+
+$purchase_complete_message_unknown_isbn = $purchase_complete_message.gsub(/9780007279616/, "404")
+$purchase_complete_message_server_error = $purchase_complete_message.gsub(/9780007279616/, "500")
