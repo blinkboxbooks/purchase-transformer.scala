@@ -8,7 +8,7 @@ require_relative 'mock_book_service'
 
 #Configure test properties
 env = ENV["SERVER"]
-env_properties = YAML.load_file('features/support/environments.yml')[env]['services']
+env_properties = YAML.load_file('features/support/config/environments.yml')[env]['services']
 books_url = env_properties['books']
 books_port = env_properties['books_port']
 amqp_url = env_properties['amqp']
