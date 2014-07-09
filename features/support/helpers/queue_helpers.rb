@@ -90,7 +90,7 @@ module KnowsAboutReportingQueueHelpers
     @@mail_sender_queue
   end
 
-  TIMEOUT_SECONDS = 1
+  TIMEOUT_SECONDS = 2
   POLLING_INTERVAL_SECONDS = 0.1
 
   def subscribe_to_queue(queue)

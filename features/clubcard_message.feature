@@ -12,6 +12,7 @@ Feature: Sending a clubcard message when a purchase is completed
     Given a successful purchase of a book without using a clubcard
     When the payment is sent for clubcard processing
     Then a clubcard message is not generated
+    And no clubcard messages are waiting to be processed
 
   Scenario: Sending clubcard message for a purchase with split payment
     Given a successful purchase of a book with split payment
@@ -23,7 +24,8 @@ Feature: Sending a clubcard message when a purchase is completed
     When the payment is sent for clubcard processing
     Then a valid clubcard message is generated and sent
 
-  Scenario:
+  @negative
+  Scenario: Not sending clubcard payment message when a book with no ISBN is purchased
     Given a user has purchased a book with no ISBN
     When the payment is sent for clubcard processing
     Then a clubcard message is not generated
