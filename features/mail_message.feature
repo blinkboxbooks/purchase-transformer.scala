@@ -29,3 +29,17 @@ Feature: Sending a mail message when a purchase is completed
     When the payment is sent for mail processing
     Then a mail message is not generated
     And the original payment is stored for later mail processing
+
+  @negative
+  Scenario: Payment complete messages with an unknown ISBN do not get processed
+    Given a user has purchased a book with an unknown ISBN
+    When the payment is sent for mail processing
+    Then a mail message is not generated
+    And the original payment is stored for later mail processing
+
+  @negative
+  Scenario: A purchase message is saved for later if the books service is not responding
+    Given a user has purchased a book while the books service is not responding
+    When the payment is sent for mail processing
+    Then a mail message is not generated
+    And the original payment is stored for later mail processing

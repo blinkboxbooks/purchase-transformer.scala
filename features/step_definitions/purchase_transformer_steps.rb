@@ -25,6 +25,14 @@ Given(/^a user has purchased a book with no ISBN$/) do
   @purchase_message_input = $purchase_complete_message_no_isbn
 end
 
+Given(/^a user has purchased a book with an unknown ISBN$/) do
+  @purchase_message_input = $purchase_complete_message_unknown_isbn
+end
+
+Given(/^a user has purchased a book while the books service is not responding$/) do
+  @purchase_message_input = $purchase_complete_message_server_error
+end
+
 When(/^the payment is sent for (clubcard|mail) processing$/) do |type|
   send("#{type}_listener_queue").publish(@purchase_message_input.to_s, :persistent => true)
 end
