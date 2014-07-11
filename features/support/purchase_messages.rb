@@ -1,5 +1,5 @@
 ####################################################################
-#Templates
+# Templates
 
 $clubcard_message_template =
     '<?xml version="1.0" encoding="UTF-8"?>
@@ -47,7 +47,7 @@ $mail_message_template =
       </sendEmail>'
 
 ####################################################################
-#Standard valid messages
+# Standard valid messages
 $purchase_complete_message = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
@@ -180,7 +180,7 @@ $expected_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3')
 $expected_mail_message = $mail_message_template.gsub(/%%ISBN%%/, '9780007279616')
 
 ####################################################################
-#Multiple books under single purchase messages
+# Multiple books under single purchase messages
 $purchase_complete_message_two_books = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
@@ -237,7 +237,7 @@ $purchase_complete_message_two_books = '<?xml version="1.0" encoding="UTF-8" sta
 $expected_clubcard_two_books_message = $clubcard_message_template.gsub(/%%POINTS%%/, '7')
 
 ####################################################################
-#NO ISBN
+# NO ISBN
 $purchase_complete_message_no_isbn = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
@@ -278,5 +278,5 @@ $purchase_complete_message_no_isbn = '<?xml version="1.0" encoding="UTF-8" stand
     </basketItems>
 </ns2:purchase>'
 
-$purchase_complete_message_unknown_isbn = $purchase_complete_message.gsub(/9780007279616/, "404")
-$purchase_complete_message_server_error = $purchase_complete_message.gsub(/9780007279616/, "500")
+$purchase_complete_message_unknown_isbn = $purchase_complete_message.gsub(/9780007279616/, '404')
+$purchase_complete_message_server_error = $purchase_complete_message.gsub(/9780007279616/, '500')

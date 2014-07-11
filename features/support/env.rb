@@ -6,27 +6,27 @@ require 'wrong'
 require 'nokogiri'
 require_relative 'mock_book_service'
 
-#Configure test properties
+# Configure test properties
 env = ENV['SERVER'] || 'local'
 env_properties = YAML.load_file('features/support/config/environments.yml')[env]['services']
 books_url = env_properties['books']
 books_port = env_properties['books_port']
 amqp_url = env_properties['amqp']
 
-#Configure MQ channel
-raise 'No AMQP URL found' unless amqp_url
+# Configure MQ channel
+fail 'No AMQP URL found' unless amqp_url
 $amqp_conn = Bunny.new(amqp_url)
 $amqp_conn.start
 $amqp_ch = $amqp_conn.create_channel
 
-#Configure Sinatra embedded web server and ensure it is started.
-raise 'No port number for mock web services found in configuration' unless books_port
+# Configure Sinatra embedded web server and ensure it is started.
+fail 'No port number for mock web services found in configuration' unless books_port
 Thread.new do
   MockBookService.run! host: books_url, port: books_port
 end
-Wrong.eventually(:timeout => 3){MockBookService.running?}
+Wrong.eventually(timeout: 3) { MockBookService.running? }
 
-#Clean up.
+# Clean up.
 at_exit do
   $amqp_conn.close
   MockBookService.stop!

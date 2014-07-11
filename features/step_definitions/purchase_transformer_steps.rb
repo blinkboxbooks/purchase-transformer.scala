@@ -9,7 +9,7 @@ Given(/^a successful purchase of a book without using a clubcard$/) do
   @expected_mail_message = $expected_mail_message
 end
 
-Given (/^a user has bought multiple books under a single purchase$/) do
+Given(/^a user has bought multiple books under a single purchase$/) do
   @purchase_message_input = $purchase_complete_message_two_books
   @expected_clubcard_message = $expected_clubcard_two_books_message
   @expected_mail_message = $expected_mail_message
@@ -34,7 +34,7 @@ Given(/^a user has purchased a book while the books service is not responding$/)
 end
 
 When(/^the payment is sent for (clubcard|mail) processing$/) do |type|
-  send("#{type}_listener_queue").publish(@purchase_message_input.to_s, :persistent => true)
+  send("#{type}_listener_queue").publish(@purchase_message_input.to_s, persistent: true)
 end
 
 Then(/^a valid clubcard message is generated and sent$/) do
@@ -43,8 +43,8 @@ Then(/^a valid clubcard message is generated and sent$/) do
 end
 
 Then(/^a (clubcard|mail) message is not generated$/) do |type|
-  actual_message = subscribe_to_queue(clubcard_collector_queue) if type == "clubcard"
-  actual_message = subscribe_to_queue(mail_sender_queue) if type == "mail"
+  actual_message = subscribe_to_queue(clubcard_collector_queue) if type == 'clubcard'
+  actual_message = subscribe_to_queue(mail_sender_queue) if type == 'mail'
   expect(actual_message).to eq nil
 end
 
