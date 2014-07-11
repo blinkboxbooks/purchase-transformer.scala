@@ -33,6 +33,10 @@ Given(/^a user has purchased a book while the books service is not responding$/)
   @purchase_message_input = $purchase_complete_message_server_error
 end
 
+Given(/^a user has purchased a book and an invalid purchase message has been received$/) do
+  @purchase_message_input = 'INVALID_XML'
+end
+
 When(/^the payment is sent for (clubcard|mail) processing$/) do |type|
   send("#{type}_listener_queue").publish(@purchase_message_input.to_s, persistent: true)
 end

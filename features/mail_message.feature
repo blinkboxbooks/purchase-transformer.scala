@@ -43,3 +43,10 @@ Feature: Sending a mail message when a purchase is completed
     When the payment is sent for mail processing
     Then a mail message is not generated
     And the original payment is stored for later mail processing
+
+  @negative
+  Scenario: An invalid purchase message does not get processed
+    Given a user has purchased a book and an invalid purchase message has been received
+    When the payment is sent for mail processing
+    Then a mail message is not generated
+    And the original payment is stored for later mail processing
