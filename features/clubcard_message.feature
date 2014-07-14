@@ -30,3 +30,10 @@ Feature: Sending a clubcard message when a purchase is completed
     When the payment is sent for clubcard processing
     Then a clubcard message is not generated
     And the original payment is stored for later clubcard processing
+
+  @negative
+  Scenario: An invalid purchase message does not get processed
+    Given a user has purchased a book and an invalid purchase message has been received
+    When the payment is sent for clubcard processing
+    Then a clubcard message is not generated
+    And the original payment is stored for later clubcard processing
