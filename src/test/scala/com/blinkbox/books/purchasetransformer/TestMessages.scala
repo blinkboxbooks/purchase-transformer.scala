@@ -2,6 +2,7 @@ package com.blinkbox.books.purchasetransformer
 
 import akka.testkit.TestProbe
 import com.blinkbox.books.messaging._
+import java.io.ByteArrayInputStream
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.verify
 import org.scalatest.Assertions._
@@ -23,7 +24,7 @@ object TestMessages {
   def isbns(ids: Int*) = ids.map(isbn(_).toString).toList
 
   /** Parse string into a normalised XML representation that's convenient for comparisons. */
-  def xml(str: String) = trim(XML.loadString(str))
+  def xml(str: String) = trim(XML.load(new ByteArrayInputStream(str.getBytes("UTF-8"))))
 
   /** Create a purchase complete message based on a template. */
   def testMessage(numBooks: Int, numBillingProviders: Int,
@@ -88,6 +89,7 @@ object TestMessages {
     // that means it throws up differences where it shoudln't in some cases.
     // (I recommend the comments in scala.xml.Equality for an impression of the issues involved - and a good laugh!).
     assert(xml(event.body.asString) == expectedContent || xml(event.body.asString).toString == expectedContent.toString)
+    assert(event.body.asString.contains("""<?xml version="1.0" encoding="UTF-8"?>"""), "Message should contain standard XML declaration")
   }
 
 }

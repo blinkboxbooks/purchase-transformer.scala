@@ -22,7 +22,8 @@ class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: Erro
   routingId: String, templateName: String, retryInterval: FiniteDuration)
   extends ReliableEventHandler(errorHandler, retryInterval) {
 
-  implicit val timeout = Timeout(retryInterval)
+  private val XmlDeclaration = """<?xml version="1.0" encoding="UTF-8"?>""" + "\n"
+  private implicit val timeout = Timeout(retryInterval)
   
   override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] =
     for (
@@ -78,7 +79,7 @@ class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: Erro
         </templateVariables>
       </sendEmail>
 
-    xml.toString
+    XmlDeclaration + xml.toString
   }
 
   private def generateReceipt(purchase: Purchase): String =
