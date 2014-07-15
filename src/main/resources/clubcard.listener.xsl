@@ -39,6 +39,10 @@
 		<xsl:element name="reason">
 			<xsl:text>Purchased basket #</xsl:text>
 			<xsl:value-of select="basketId" />
+		</xsl:element>	
+				
+		<xsl:element name="transactionValue">			
+			<xsl:value-of select="billingProviders/billingProvider[name='braintree']/payment/amount" />
 		</xsl:element>
 	</xsl:element>
 </xsl:template>

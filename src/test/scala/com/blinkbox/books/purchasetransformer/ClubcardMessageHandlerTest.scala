@@ -75,6 +75,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
         <transactions>{ isbns(1) }</transactions>
         <transactionDate>{ TransactionDate }</transactionDate>
         <reason>Purchased basket #{ BasketId }</reason>
+        <transactionValue>6.0</transactionValue>
       </ClubcardMessage>
     trim(xml)
   }

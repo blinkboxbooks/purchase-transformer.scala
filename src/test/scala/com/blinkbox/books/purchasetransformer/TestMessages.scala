@@ -50,7 +50,7 @@ object TestMessages {
         {
           for (providerNum <- 1 to numBillingProviders)
             yield <billingProvider>
-                    <name>{ "billing-provider-" + providerNum }</name>
+                    <name>{ if (providerNum == 1) "braintree" else "billing-provider-" + (providerNum  - 1) }</name>
                     <region>UK</region>
                     <payment>
                       <amount>{ 12.0 / numBillingProviders }</amount>
