@@ -38,6 +38,7 @@ val dependencySettings = Seq(
   }
 )
 
+
 val publishSettings = Seq(
   mergeStrategy in assembly <<= (mergeStrategy in assembly) { old =>
     {
@@ -45,7 +46,10 @@ val publishSettings = Seq(
       case x => old(x)
     }
   },
-  artifact in (Compile, assembly) ~= { art => art.copy(`classifier` = Some("assembly")) }
+  artifact in (Compile, assembly) ~= { art => art.copy(`classifier` = Some("assembly")) },
+  publishArtifact in (Compile, packageBin) := false,
+  publishArtifact in (Compile, packageDoc) := false,
+  publishArtifact in (Compile, packageSrc) := false 
 ) ++ addArtifact(artifact in (Compile, assembly), assembly).settings
 
 val root = (project in file(".")).
