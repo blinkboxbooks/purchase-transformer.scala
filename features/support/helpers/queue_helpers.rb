@@ -14,27 +14,27 @@ module KnowsAboutQueueHelpers
               :mail_listener_dlq
 
   def initialize_clubcard_queues
-    @clubcard_collector_exchange = $amqp_ch.topic('Clubcard.Collector.Exchange', durable: true)
-    @clubcard_listener_exchange = $amqp_ch.topic('Clubcard.Listener.Exchange', durable: true)
+    @clubcard_collector_exchange = $amqp_ch.topic('Clubcard.Collector.Exchange', durable: true, passive: true)
+    @clubcard_listener_exchange = $amqp_ch.topic('Clubcard.Listener.Exchange', durable: true) #TODO confirm passive
 
     @clubcard_collector_queue = $amqp_ch.queue('Clubcard.Collector.Queue', durable: true)
     @clubcard_collector_queue.bind(@clubcard_collector_exchange)
 
-    @clubcard_listener_queue = $amqp_ch.queue('Clubcard.Listener.Queue', durable: true)
+    @clubcard_listener_queue = $amqp_ch.queue('Clubcard.Listener.Queue', durable: true, passive: true)
     @clubcard_listener_queue.bind(@clubcard_listener_exchange)
-    @clubcard_listener_dlq = $amqp_ch.queue('Clubcard.Listener.DLQ', durable: true)
+    @clubcard_listener_dlq = $amqp_ch.queue('Clubcard.Listener.DLQ', durable: true, passive: true)
   end
 
   def initialize_mail_queues
-    @mail_listener_exchange = $amqp_ch.topic('Mail.Listener.Exchange', durable: true)
-    @mail_sender_exchange = $amqp_ch.topic('Mail.Sender.Exchange', durable: true)
+    @mail_listener_exchange = $amqp_ch.topic('Mail.Listener.Exchange', durable: true) #TODO confirm passive
+    @mail_sender_exchange = $amqp_ch.topic('Mail.Sender.Exchange', durable: true, passive: true)
 
-    @mail_listener_queue = $amqp_ch.queue('Mail.Listener.Queue', durable: true)
+    @mail_listener_queue = $amqp_ch.queue('Mail.Listener.Queue', durable: true, passive: true)
     @mail_listener_queue.bind(@mail_listener_exchange)
 
     @mail_sender_queue = $amqp_ch.queue('Mail.Sender.Queue', durable: true)
     @mail_sender_queue.bind(@mail_sender_exchange)
-    @mail_listener_dlq = $amqp_ch.queue('Mail.Listener.DLQ', durable: true)
+    @mail_listener_dlq = $amqp_ch.queue('Mail.Listener.DLQ', durable: true, passive: true)
   end
 
   def purge_queues
@@ -50,7 +50,7 @@ module KnowsAboutQueueHelpers
   TIMEOUT_SECONDS = 2
   POLLING_INTERVAL_SECONDS = 0.1
 
-  def subscribe_to_queue(queue)
+  def pop_message_from_queue(queue)
     time_limit = Time.now + TIMEOUT_SECONDS
     @received_message = nil
 

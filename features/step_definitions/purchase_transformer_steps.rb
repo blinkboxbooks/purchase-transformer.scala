@@ -42,23 +42,23 @@ When(/^the payment is sent for (clubcard|mail) processing$/) do |type|
 end
 
 Then(/^a valid clubcard message is generated and sent$/) do
-  actual_clubcard_message = subscribe_to_queue(clubcard_collector_queue)
+  actual_clubcard_message = pop_message_from_queue(clubcard_collector_queue)
   expect(actual_clubcard_message).to eq @expected_clubcard_message
 end
 
 Then(/^a (clubcard|mail) message is not generated$/) do |type|
-  actual_message = subscribe_to_queue(clubcard_collector_queue) if type == 'clubcard'
-  actual_message = subscribe_to_queue(mail_sender_queue) if type == 'mail'
+  actual_message = pop_message_from_queue(clubcard_collector_queue) if type == 'clubcard'
+  actual_message = pop_message_from_queue(mail_sender_queue) if type == 'mail'
   expect(actual_message).to eq nil
 end
 
 Then(/^the original payment is stored for later (clubcard|mail) processing$/) do |type|
-  dlq_message = subscribe_to_queue(send("#{type}_listener_dlq"))
+  dlq_message = pop_message_from_queue(send("#{type}_listener_dlq"))
   expect(dlq_message).to eq @purchase_message_input
 end
 
 Then(/^a valid mail message is generated and sent$/) do
-  actual_mail_message = subscribe_to_queue(mail_sender_queue)
+  actual_mail_message = pop_message_from_queue(mail_sender_queue)
   expect(actual_mail_message).to eq @expected_mail_message
 end
 
