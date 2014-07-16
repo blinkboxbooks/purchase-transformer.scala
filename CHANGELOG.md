@@ -1,5 +1,15 @@
 # Change log
 
+## 0.1.0 ([#3](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/3) 2014-07-15 14:24:07)
+
+Publish fat jar in RPM
+
+### New features
+
+- Updated build config to publish fat jar in RPM.
+- Updated build settings to match latest practices and recommendations.
+
+
 ## 0.0.2 ([#4](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/4) 2014-07-15 16:29:18)
 
 Add standard XML declaration to generated XML.
