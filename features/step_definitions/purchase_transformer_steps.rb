@@ -17,7 +17,7 @@ end
 
 Given(/^a successful purchase of a book with split payment$/) do
   @purchase_message_input = $purchase_complete_message_split_payment
-  @expected_clubcard_message = $expected_clubcard_message
+  @expected_clubcard_message = $expected_split_payment_clubcard_message
   @expected_mail_message = $expected_mail_message
 end
 

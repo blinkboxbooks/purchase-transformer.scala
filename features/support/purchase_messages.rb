@@ -14,11 +14,13 @@ $clubcard_message_template =
    <transactions>9780007279616</transactions>
    <transactionDate>2013-10-15T13:32:51</transactionDate>
    <reason>Purchased basket #424056</reason>
-   <transactionValue>3.63</transactionValue>
-</ClubcardMessage>'
+   <transactionValue>%%TRANSACTION_VALUE%%</transactionValue>
+</ClubcardMessage>
+'
 
 $mail_message_template =
-    '<sendEmail r:messageId="receipt-76-424056" r:instance="qa.mobcastdev.com" r:originator="bookStore" xmlns:r="http://schemas.blinkbox.com/books/routing/v1" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1">
+    '<?xml version="1.0" encoding="UTF-8"?>
+<sendEmail r:messageId="receipt-76-424056" r:instance="qa.mobcastdev.com" r:originator="bookStore" xmlns:r="http://schemas.blinkbox.com/books/routing/v1" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1">
         <template>receipt</template>
         <to>
           <recipient>
@@ -176,7 +178,8 @@ $purchase_complete_message_split_payment = '<?xml version="1.0" encoding="UTF-8"
     </basketItems>
 </ns2:purchase>'
 
-$expected_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3')
+$expected_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3').gsub(/%%TRANSACTION_VALUE%%/, '3.63')
+$expected_split_payment_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3').gsub(/%%TRANSACTION_VALUE%%/, '3.00')
 $expected_mail_message = $mail_message_template.gsub(/%%ISBN%%/, '9780007279616')
 
 ####################################################################
@@ -234,8 +237,7 @@ $purchase_complete_message_two_books = '<?xml version="1.0" encoding="UTF-8" sta
     </basketItems>
 </ns2:purchase>'
 
-$expected_clubcard_two_books_message = $clubcard_message_template.gsub(/%%POINTS%%/, '7')
-
+$expected_clubcard_two_books_message = $clubcard_message_template.gsub(/%%POINTS%%/, '7').gsub(/%%TRANSACTION_VALUE%%/, '7.26')
 ####################################################################
 # NO ISBN
 $purchase_complete_message_no_isbn = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
