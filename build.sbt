@@ -1,7 +1,7 @@
 import AssemblyKeys._
 
 val buildSettings = Seq(
-  organization := "com.blinkbox.books.agora",
+  organization := "com.blinkbox.books.hermes",
   name := "purchase-transformer",
   version := scala.util.Try(scala.io.Source.fromFile("VERSION").mkString.trim).getOrElse("0.0.0"),
   scalaVersion  := "2.10.4",
