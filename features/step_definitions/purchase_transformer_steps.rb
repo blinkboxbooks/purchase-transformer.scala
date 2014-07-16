@@ -1,36 +1,36 @@
 Given(/^a successful purchase of a book$/) do
-  @purchase_message_input = $purchase_complete_message
-  @expected_clubcard_message = $expected_clubcard_message
-  @expected_mail_message = $expected_mail_message
+  @purchase_message_input = purchase_complete_message
+  @expected_clubcard_message = expected_clubcard_message
+  @expected_mail_message = expected_mail_message
 end
 
 Given(/^a successful purchase of a book without using a clubcard$/) do
-  @purchase_message_input = $purchase_complete_message_no_clubcard
-  @expected_mail_message = $expected_mail_message
+  @purchase_message_input = purchase_complete_message_no_clubcard
+  @expected_mail_message = expected_mail_message
 end
 
 Given(/^a user has bought multiple books under a single purchase$/) do
-  @purchase_message_input = $purchase_complete_message_two_books
-  @expected_clubcard_message = $expected_clubcard_two_books_message
-  @expected_mail_message = $expected_mail_message
+  @purchase_message_input = purchase_complete_message_two_books
+  @expected_clubcard_message = expected_clubcard_two_books_message
+  @expected_mail_message = expected_mail_message
 end
 
 Given(/^a successful purchase of a book with split payment$/) do
-  @purchase_message_input = $purchase_complete_message_split_payment
-  @expected_clubcard_message = $expected_split_payment_clubcard_message
-  @expected_mail_message = $expected_mail_message
+  @purchase_message_input = purchase_complete_message_split_payment
+  @expected_clubcard_message = expected_split_payment_clubcard_message
+  @expected_mail_message = expected_mail_message
 end
 
 Given(/^a user has purchased a book with no ISBN$/) do
-  @purchase_message_input = $purchase_complete_message_no_isbn
+  @purchase_message_input = purchase_complete_message_no_isbn
 end
 
 Given(/^a user has purchased a book with an unknown ISBN$/) do
-  @purchase_message_input = $purchase_complete_message_unknown_isbn
+  @purchase_message_input = purchase_complete_message_unknown_isbn
 end
 
 Given(/^a user has purchased a book while the books service is not responding$/) do
-  @purchase_message_input = $purchase_complete_message_server_error
+  @purchase_message_input = purchase_complete_message_server_error
 end
 
 Given(/^a user has purchased a book and an invalid purchase message has been received$/) do

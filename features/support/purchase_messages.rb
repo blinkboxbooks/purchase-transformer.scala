@@ -1,56 +1,8 @@
-####################################################################
-# Templates
-
-$clubcard_message_template =
-    '<?xml version="1.0" encoding="UTF-8"?>
-<ClubcardMessage xmlns="http://schemas.blinkboxbooks.com/events/clubcard/v1"
-                 xmlns:r="http://schemas.blinkboxbooks.com/messaging/routing/v1"
-                 xmlns:v="http://schemas.blinkboxbooks.com/messaging/versioning"
-                 r:originator="purchasing-service"
-                 v:version="1.0">
-   <userId>76</userId>
-   <clubcardNumber>634004078527573552</clubcardNumber>
-   <points>%%POINTS%%</points>
-   <transactions>9780007279616</transactions>
-   <transactionDate>2013-10-15T13:32:51</transactionDate>
-   <reason>Purchased basket #424056</reason>
-   <transactionValue>%%TRANSACTION_VALUE%%</transactionValue>
-</ClubcardMessage>
-'
-
-$mail_message_template =
-    '<?xml version="1.0" encoding="UTF-8"?>
-<sendEmail r:messageId="receipt-76-424056" r:instance="qa.mobcastdev.com" r:originator="bookStore" xmlns:r="http://schemas.blinkbox.com/books/routing/v1" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1">
-        <template>receipt</template>
-        <to>
-          <recipient>
-            <name>mohamed</name>
-            <email>mohameda@blinkbox.com</email>
-          </recipient>
-        </to>
-        <templateVariables>
-          <templateVariable>
-            <key>salutation</key>
-            <value>mohamed</value>
-          </templateVariable>
-          <templateVariable>
-            <key>bookTitle</key>
-            <value>Title-%%ISBN%%</value>
-          </templateVariable>
-          <templateVariable>
-            <key>author</key>
-            <value>Author-%%ISBN%%</value>
-          </templateVariable>
-          <templateVariable>
-            <key>price</key>
-            <value>3.63</value>
-          </templateVariable>
-        </templateVariables>
-      </sendEmail>'
-
-####################################################################
-# Standard valid messages
-$purchase_complete_message = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+# This module contains a set of test messages and responses
+module KnowsAboutTestMessages
+  # Input messages
+  def purchase_complete_message
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -90,8 +42,10 @@ $purchase_complete_message = '<?xml version="1.0" encoding="UTF-8" standalone="y
         </basketItem>
     </basketItems>
 </ns2:purchase>'
+  end
 
-$purchase_complete_message_no_clubcard = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  def purchase_complete_message_no_clubcard
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -128,8 +82,10 @@ $purchase_complete_message_no_clubcard = '<?xml version="1.0" encoding="UTF-8" s
         </basketItem>
     </basketItems>
 </ns2:purchase>'
+  end
 
-$purchase_complete_message_split_payment = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  def purchase_complete_message_split_payment
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -177,14 +133,11 @@ $purchase_complete_message_split_payment = '<?xml version="1.0" encoding="UTF-8"
         </basketItem>
     </basketItems>
 </ns2:purchase>'
+  end
 
-$expected_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3').gsub(/%%TRANSACTION_VALUE%%/, '3.63')
-$expected_split_payment_clubcard_message = $clubcard_message_template.gsub(/%%POINTS%%/, '3').gsub(/%%TRANSACTION_VALUE%%/, '3.00')
-$expected_mail_message = $mail_message_template.gsub(/%%ISBN%%/, '9780007279616')
-
-####################################################################
-# Multiple books under single purchase messages
-$purchase_complete_message_two_books = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  # Multiple books under single purchase messages
+  def purchase_complete_message_two_books
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -236,11 +189,10 @@ $purchase_complete_message_two_books = '<?xml version="1.0" encoding="UTF-8" sta
         </basketItem>
     </basketItems>
 </ns2:purchase>'
+  end
 
-$expected_clubcard_two_books_message = $clubcard_message_template.gsub(/%%POINTS%%/, '7').gsub(/%%TRANSACTION_VALUE%%/, '7.26')
-####################################################################
-# NO ISBN
-$purchase_complete_message_no_isbn = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  def purchase_complete_message_no_isbn
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -279,6 +231,78 @@ $purchase_complete_message_no_isbn = '<?xml version="1.0" encoding="UTF-8" stand
         </basketItem>
     </basketItems>
 </ns2:purchase>'
+  end
 
-$purchase_complete_message_unknown_isbn = $purchase_complete_message.gsub(/9780007279616/, '404')
-$purchase_complete_message_server_error = $purchase_complete_message.gsub(/9780007279616/, '500')
+  def purchase_complete_message_unknown_isbn
+    purchase_complete_message.gsub(/9780007279616/, '404')
+  end
+
+  def purchase_complete_message_server_error
+    purchase_complete_message.gsub(/9780007279616/, '500')
+  end
+
+  # Output messages
+  def clubcard_message_template
+    '<?xml version="1.0" encoding="UTF-8"?>
+<ClubcardMessage xmlns="http://schemas.blinkboxbooks.com/events/clubcard/v1"
+                 xmlns:r="http://schemas.blinkboxbooks.com/messaging/routing/v1"
+                 xmlns:v="http://schemas.blinkboxbooks.com/messaging/versioning"
+                 r:originator="purchasing-service"
+                 v:version="1.0">
+   <userId>76</userId>
+   <clubcardNumber>634004078527573552</clubcardNumber>
+   <points>%%POINTS%%</points>
+   <transactions>9780007279616</transactions>
+   <transactionDate>2013-10-15T13:32:51</transactionDate>
+   <reason>Purchased basket #424056</reason>
+   <transactionValue>%%TRANSACTION_VALUE%%</transactionValue>
+</ClubcardMessage>
+'
+  end
+
+  def expected_mail_message
+    mail_message = '<?xml version="1.0" encoding="UTF-8"?>
+<sendEmail r:messageId="receipt-76-424056" r:instance="qa.mobcastdev.com" r:originator="bookStore" xmlns:r="http://schemas.blinkbox.com/books/routing/v1" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1">
+        <template>receipt</template>
+        <to>
+          <recipient>
+            <name>mohamed</name>
+            <email>mohameda@blinkbox.com</email>
+          </recipient>
+        </to>
+        <templateVariables>
+          <templateVariable>
+            <key>salutation</key>
+            <value>mohamed</value>
+          </templateVariable>
+          <templateVariable>
+            <key>bookTitle</key>
+            <value>Title-%%ISBN%%</value>
+          </templateVariable>
+          <templateVariable>
+            <key>author</key>
+            <value>Author-%%ISBN%%</value>
+          </templateVariable>
+          <templateVariable>
+            <key>price</key>
+            <value>3.63</value>
+          </templateVariable>
+        </templateVariables>
+      </sendEmail>'
+    mail_message.gsub(/%%ISBN%%/, '9780007279616')
+  end
+
+  def expected_clubcard_message
+    clubcard_message_template.gsub(/%%POINTS%%/, '3').gsub(/%%TRANSACTION_VALUE%%/, '3.63')
+  end
+
+  def expected_split_payment_clubcard_message
+    clubcard_message_template.gsub(/%%POINTS%%/, '3').gsub(/%%TRANSACTION_VALUE%%/, '3.00')
+  end
+
+  def expected_clubcard_two_books_message
+    clubcard_message_template.gsub(/%%POINTS%%/, '7').gsub(/%%TRANSACTION_VALUE%%/, '7.26')
+  end
+end
+
+World(KnowsAboutTestMessages)
