@@ -13,20 +13,22 @@ module KnowsAboutQueueHelpers
               :mail_listener_queue,
               :mail_listener_dlq
 
+  # Initialize queues, exchanges and bindings. Passive identifies items already
+  # created by the purchase-transformer itself.
   def initialize_clubcard_queues
+    @clubcard_listener_exchange = $amqp_ch.topic('Clubcard.Listener.Exchange', durable: true)
     @clubcard_collector_exchange = $amqp_ch.topic('Clubcard.Collector.Exchange', durable: true, passive: true)
-    @clubcard_listener_exchange = $amqp_ch.topic('Clubcard.Listener.Exchange', durable: true) #TODO confirm passive
-
-    @clubcard_collector_queue = $amqp_ch.queue('Clubcard.Collector.Queue', durable: true)
-    @clubcard_collector_queue.bind(@clubcard_collector_exchange)
 
     @clubcard_listener_queue = $amqp_ch.queue('Clubcard.Listener.Queue', durable: true, passive: true)
     @clubcard_listener_queue.bind(@clubcard_listener_exchange)
+
+    @clubcard_collector_queue = $amqp_ch.queue('Clubcard.Collector.Queue', durable: true)
+    @clubcard_collector_queue.bind(@clubcard_collector_exchange)
     @clubcard_listener_dlq = $amqp_ch.queue('Clubcard.Listener.DLQ', durable: true, passive: true)
   end
 
   def initialize_mail_queues
-    @mail_listener_exchange = $amqp_ch.topic('Mail.Listener.Exchange', durable: true) #TODO confirm passive
+    @mail_listener_exchange = $amqp_ch.topic('Mail.Listener.Exchange', durable: true)
     @mail_sender_exchange = $amqp_ch.topic('Mail.Sender.Exchange', durable: true, passive: true)
 
     @mail_listener_queue = $amqp_ch.queue('Mail.Listener.Queue', durable: true, passive: true)
