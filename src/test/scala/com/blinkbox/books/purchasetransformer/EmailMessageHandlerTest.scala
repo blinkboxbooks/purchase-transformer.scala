@@ -151,7 +151,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   }
 
   private def checkRecordedError[T <: Throwable](msg: Event)(implicit manifest: Manifest[T]): Unit = {
-    val expectedExceptionClass = manifest.erasure.asInstanceOf[Class[T]]
+    val expectedExceptionClass = manifest.runtimeClass.asInstanceOf[Class[T]]
     val error = ArgumentCaptor.forClass(classOf[Exception])
     verify(errorHandler).handleError(matcherEq(msg), error.capture)
     assert(expectedExceptionClass.isAssignableFrom(error.getValue.getClass))
