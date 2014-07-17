@@ -1,5 +1,13 @@
 # Change log
 
+## 0.1.1 ([#5](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/5) 2014-07-16 12:11:51)
+
+Acceptance tests
+
+### Improvements to the tests of purchase-transformer
+
+Test improvement: This PR adds cucumber acceptance tests. It has two feature files: clubcard messages and mail messages. The purchase transformer requires the catalogue service so the tests are mocking this using Sinatra. They use Bunny to connect to rabbitMQ and set up exchanges and queues. Some queues and exchanges are created by the purchase-transformer itself so they are created in passive mode.
+
 ## 0.1.0 ([#3](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/3) 2014-07-15 14:24:07)
 
 Publish fat jar in RPM
