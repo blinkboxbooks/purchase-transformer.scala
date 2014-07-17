@@ -10,6 +10,6 @@ begin
   Cucumber::Rake::Task.new(:features)
 rescue LoadError
   task :features do
-    $stderr.puts 'Please install cucumber: `gem install cucumber`'
+    $stderr.puts 'Please run: `bundle install` to install required gems.'
   end
 end

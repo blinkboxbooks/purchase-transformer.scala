@@ -2,7 +2,8 @@
 module KnowsAboutTestMessages
   # Input messages
   def purchase_complete_message
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <<-EOS
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -41,11 +42,13 @@ module KnowsAboutTestMessages
             </listPrice>
         </basketItem>
     </basketItems>
-</ns2:purchase>'
+</ns2:purchase>
+    EOS
   end
 
   def purchase_complete_message_no_clubcard
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <<-EOS
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -81,11 +84,13 @@ module KnowsAboutTestMessages
             </listPrice>
         </basketItem>
     </basketItems>
-</ns2:purchase>'
+</ns2:purchase>
+    EOS
   end
 
   def purchase_complete_message_split_payment
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <<-EOS
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -132,12 +137,14 @@ module KnowsAboutTestMessages
             </listPrice>
         </basketItem>
     </basketItems>
-</ns2:purchase>'
+</ns2:purchase>
+    EOS
   end
 
   # Multiple books under single purchase messages
   def purchase_complete_message_two_books
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <<-EOS
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -188,11 +195,13 @@ module KnowsAboutTestMessages
             </listPrice>
         </basketItem>
     </basketItems>
-</ns2:purchase>'
+</ns2:purchase>
+    EOS
   end
 
   def purchase_complete_message_no_isbn
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <<-EOS
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:purchase xmlns:ns2="http://schemas.blinkbox.com/books/purchasing/v1">
     <userId>76</userId>
     <firstName>mohamed</firstName>
@@ -230,7 +239,8 @@ module KnowsAboutTestMessages
             </listPrice>
         </basketItem>
     </basketItems>
-</ns2:purchase>'
+</ns2:purchase>
+    EOS
   end
 
   def purchase_complete_message_unknown_isbn
@@ -243,7 +253,8 @@ module KnowsAboutTestMessages
 
   # Output messages
   def clubcard_message_template
-    '<?xml version="1.0" encoding="UTF-8"?>
+    <<-EOS
+<?xml version="1.0" encoding="UTF-8"?>
 <ClubcardMessage xmlns="http://schemas.blinkboxbooks.com/events/clubcard/v1"
                  xmlns:r="http://schemas.blinkboxbooks.com/messaging/routing/v1"
                  xmlns:v="http://schemas.blinkboxbooks.com/messaging/versioning"
@@ -257,11 +268,12 @@ module KnowsAboutTestMessages
    <reason>Purchased basket #424056</reason>
    <transactionValue>%%TRANSACTION_VALUE%%</transactionValue>
 </ClubcardMessage>
-'
+    EOS
   end
 
   def expected_mail_message
-    mail_message = '<?xml version="1.0" encoding="UTF-8"?>
+    mail_message = <<-EOS
+<?xml version="1.0" encoding="UTF-8"?>
 <sendEmail r:messageId="receipt-76-424056" r:instance="qa.mobcastdev.com" r:originator="bookStore" xmlns:r="http://schemas.blinkbox.com/books/routing/v1" xmlns="http://schemas.blinkbox.com/books/emails/sending/v1">
         <template>receipt</template>
         <to>
@@ -288,8 +300,9 @@ module KnowsAboutTestMessages
             <value>3.63</value>
           </templateVariable>
         </templateVariables>
-      </sendEmail>'
-    mail_message.gsub(/%%ISBN%%/, '9780007279616')
+      </sendEmail>
+    EOS
+    mail_message.gsub(/%%ISBN%%/, '9780007279616').chop!
   end
 
   def expected_clubcard_message

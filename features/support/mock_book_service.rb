@@ -5,9 +5,6 @@ require 'cgi'
 # Special ISBN:
 # used to signal that a book with an unknown contributor should be returned.
 UNKNOWN_CONTRIBUTOR_ID ||= '404404'
-# used to signal that a book without any author (contributor)
-# should be returned.
-NO_AUTHOR_ID ||= '505505'
 
 # This class specifies a web service that responds to book, contributor
 #  and publisher requests, returning simple responses.
@@ -49,39 +46,41 @@ class MockBookService < Sinatra::Base
         links: []
     }
 
-    response[:links].push(
-                           rel: 'urn:blinkboxbooks:schema:contributor',
-                           href: "/service/catalogue/contributors/#{contributor_id}",
-                           targetGuid: "urn:blinkboxbooks:id:contributor:#{contributor_id}",
-                           title: "Author-#{id}"
-                         ) unless (id.to_s == NO_AUTHOR_ID)
+    response[:links].push create_link('contributor',
+                                      "/service/catalogue/contributors/#{contributor_id}",
+                                      "contributor:#{contributor_id}",
+                                      "Author-#{id}")
 
-    response[:links].push(
-                           rel: 'urn:blinkboxbooks:schema:synopsis',
-                           href: "/service/catalogue/books/#{id}/synopsis",
-                           targetGuid: "urn:blinkboxbooks:id:synopsis:#{id}",
-                           title: 'Synopsis'
-                         )
+    response[:links].push create_link('synopsis',
+                                      "/service/catalogue/books/#{id}/synopsis",
+                                      "synopsis:#{id}",
+                                      'Synopsis')
 
-    response[:links].push(
-                           rel: 'urn:blinkboxbooks:schema:publisher',
-                           href: '/service/catalogue/publishers/479',
-                           targetGuid: 'urn:blinkboxbooks:id:publisher:479',
-                           title: "Publisher #{id}"
-                         )
+    response[:links].push create_link('publisher',
+                                      '/service/catalogue/publishers/479',
+                                      'publisher:479',
+                                      "Publisher #{id}")
 
-    response[:links].push(
-                           rel: 'urn:blinkboxbooks:schema:bookpricelist',
-                           href: "/service/catalogue/prices?isbn=#{id}",
-                           title: 'Price'
-                          )
+    response[:links].push create_link('bookpricelist',
+                                      "/service/catalogue/prices?isbn=#{id}",
+                                      nil,
+                                      'Price')
 
-    response[:links].push(
-                           rel: 'urn:blinkboxbooks:schema:samplemedia',
-                           href: 'http://internal-media.mobcastdev.com/9780/007/324/354/727b8fd489ce67e7b5d195c89179cb44.sample.epub',
-                           title: 'Sample'
-                         )
-
+    response[:links].push create_link('samplemedia',
+                                      'http://internal-media.mobcastdev.com/9780/007/324/354/727b8fd489ce67e7b5d195c89179cb44.sample.epub',
+                                      nil,
+                                      'Sample')
     response
+  end
+
+  private
+
+  def create_link(type, href, guid, title)
+    link = {}
+    link[:rel] = "urn:blinkboxbooks:schema:#{type}"
+    link[:href] = href
+    link[:targetGuid] = "urn:blinkboxbooks:id:#{guid}" if guid
+    link[:title] = title
+    link
   end
 end

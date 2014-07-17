@@ -1,14 +1,14 @@
 Feature: Sending a mail message when a purchase is completed
   As a mailer
-  I want a mail message to be sent when a purchase is completed
-  So that I can ensure mails are sent for purchases
+  I want to be instructed to mail a purchase message on purchase completion
+  So that I can send out a purchase email
 
   Scenario: Sending a mail message when purchase complete is valid
     Given a successful purchase of a book
     When the payment is sent for mail processing
     Then a valid mail message is generated and sent
 
-  Scenario: Sending a mail message when purchasing book without a clubcard
+  Scenario: Sending a mail message when purchasing a book without a clubcard
     Given a successful purchase of a book without using a clubcard
     When the payment is sent for mail processing
     Then a valid mail message is generated and sent

@@ -1,11 +1,6 @@
-Given(/^a successful purchase of a book$/) do
-  @purchase_message_input = purchase_complete_message
+Given(/^a successful purchase of a book( without using a clubcard)?$/) do |without_clubcard|
+  @purchase_message_input = without_clubcard ? purchase_complete_message_no_clubcard : purchase_complete_message
   @expected_clubcard_message = expected_clubcard_message
-  @expected_mail_message = expected_mail_message
-end
-
-Given(/^a successful purchase of a book without using a clubcard$/) do
-  @purchase_message_input = purchase_complete_message_no_clubcard
   @expected_mail_message = expected_mail_message
 end
 
@@ -21,12 +16,15 @@ Given(/^a successful purchase of a book with split payment$/) do
   @expected_mail_message = expected_mail_message
 end
 
-Given(/^a user has purchased a book with no ISBN$/) do
-  @purchase_message_input = purchase_complete_message_no_isbn
-end
-
-Given(/^a user has purchased a book with an unknown ISBN$/) do
-  @purchase_message_input = purchase_complete_message_unknown_isbn
+Given(/^a user has purchased a book with(?: an)? (\w+)? ISBN$/) do |predicate|
+  case predicate
+  when /no/
+    @purchase_message_input = purchase_complete_message_no_isbn
+  when /unknown/
+    @purchase_message_input = purchase_complete_message_unknown_isbn
+  else
+    fail "Unknown predicate #{predicate} for purchasing a book with an ISBN"
+  end
 end
 
 Given(/^a user has purchased a book while the books service is not responding$/) do
@@ -41,9 +39,15 @@ When(/^the payment is sent for (clubcard|mail) processing$/) do |type|
   send("#{type}_listener_queue").publish(@purchase_message_input.to_s, persistent: true)
 end
 
-Then(/^a valid clubcard message is generated and sent$/) do
-  actual_clubcard_message = pop_message_from_queue(clubcard_collector_queue)
-  expect(actual_clubcard_message).to eq @expected_clubcard_message
+Then(/^a valid (clubcard|mail) message is generated and sent$/) do |type|
+  case type
+  when 'clubcard'
+    actual_message = pop_message_from_queue(clubcard_collector_queue)
+    expect(actual_message).to eq @expected_clubcard_message
+  when 'mail'
+    actual_message = pop_message_from_queue(mail_sender_queue)
+    expect(actual_message).to eq @expected_mail_message
+  end
 end
 
 Then(/^a (clubcard|mail) message is not generated$/) do |type|
@@ -55,11 +59,6 @@ end
 Then(/^the original payment is stored for later (clubcard|mail) processing$/) do |type|
   dlq_message = pop_message_from_queue(send("#{type}_listener_dlq"))
   expect(dlq_message).to eq @purchase_message_input
-end
-
-Then(/^a valid mail message is generated and sent$/) do
-  actual_mail_message = pop_message_from_queue(mail_sender_queue)
-  expect(actual_mail_message).to eq @expected_mail_message
 end
 
 Then(/^no clubcard messages are waiting to be processed$/) do
