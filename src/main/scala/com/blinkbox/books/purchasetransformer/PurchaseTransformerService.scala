@@ -21,7 +21,7 @@ import scala.concurrent.Future
 /**
  * Entry point for the purchase-transformer service.
  */
-object PurchaseTransformerService extends App with Configuration /*with Loggers*/ {
+object PurchaseTransformerService extends App with Configuration with Loggers {
 
   val log = LoggerFactory.getLogger(getClass)
 
