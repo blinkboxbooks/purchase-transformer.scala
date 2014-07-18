@@ -37,8 +37,8 @@ object PurchaseTransformerService extends App with Configuration /*with Loggers*
   val consumerConnection = newConnection()
 
   private def publisher(config: Config, actorName: String) =
-    system.actorOf(Props(new RabbitMqConfirmedPublisher(
-      publisherConnection.createChannel(), PublisherConfiguration(config))), name = actorName)
+    system.actorOf(Props(new RabbitMqConfirmedPublisher(publisherConnection, PublisherConfiguration(config))), 
+        name = actorName)
 
   // Initialise the actor system.
   implicit val system = ActorSystem("purchase-transformer-service")

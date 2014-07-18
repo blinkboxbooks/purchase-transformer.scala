@@ -9,8 +9,9 @@ import java.util.concurrent.TimeoutException
 import javax.xml.transform.stream.{ StreamSource, StreamResult }
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.xml.XML
 import scala.annotation.tailrec
+import scala.util.{ Try, Success }
+import scala.xml.XML
 
 /**
  * Actor that receives incoming purchase-complete messages
@@ -22,12 +23,12 @@ class ClubcardMessageHandler(output: ActorRef, errorHandler: ErrorHandler, retry
   private implicit val timeout = Timeout(retryInterval)
 
   // Use XSLT to transform the input and pass on the result to the output.
-  override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] = Future {
+  override def handleEvent(event: Event, originalSender: ActorRef) = {
     val purchase = Purchase.fromXml(event.body.content)
     val eventContext = Purchase.context(purchase);
     if (purchase.clubcardPointsAward.isDefined) {
       log.debug(s"Sending email message for userUd ${purchase.userId}, basketId ${purchase.basketId}")
-      output ? Event.xml(transform(event.body.asString), eventContext)
+      (output ? Event.xml(transform(event.body.asString), eventContext)).map(res => ())
     } else {
       log.debug(s"Ignoring purchase message for userUd ${purchase.userId}, basketId ${purchase.basketId}, with no clubcard points awarded")
       Future.successful(())

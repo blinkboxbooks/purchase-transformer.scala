@@ -48,10 +48,18 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
 
   test("Send message with clubcard points") {
     within(5000.millis) {
+      // Send test message to actor. 
       handler ! Event.xml(testMessage(2, 2, true).toString, eventHeader)
+
+      // Check the right output message was generated.
+      checkPublishedEvent(output, expectedClubcardMessage)
+
+      // Make the test probe that is the output send a Success notification back.
+      output.send(output.lastSender, Success())
+
+      // Check the success message is passed on.
       expectMsgType[Success]
 
-      checkPublishedEvent(output, expectedClubcardMessage)
       verifyNoMoreInteractions(errorHandler)
     }
   }

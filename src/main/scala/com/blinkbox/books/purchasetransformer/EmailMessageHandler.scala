@@ -11,6 +11,7 @@ import java.util.concurrent.TimeoutException
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.util.Try
 import spray.can.Http.ConnectionException
 
 /**
@@ -25,7 +26,7 @@ class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: Erro
   private val XmlDeclaration = """<?xml version="1.0" encoding="UTF-8"?>""" + "\n"
   private implicit val timeout = Timeout(retryInterval)
   
-  override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] =
+  override def handleEvent(event: Event, originalSender: ActorRef) = 
     for (
       purchase <- Future(Purchase.fromXml(event.body.content));
       isbns = purchase.basketItems.map(_.isbn);
