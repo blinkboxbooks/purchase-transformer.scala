@@ -23,7 +23,7 @@ class ClubcardMessageHandler(output: ActorRef, errorHandler: ErrorHandler, retry
   private implicit val timeout = Timeout(retryInterval)
 
   // Use XSLT to transform the input and pass on the result to the output.
-  override def handleEvent(event: Event, originalSender: ActorRef) = {
+  override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] = {
     val purchase = Purchase.fromXml(event.body.content)
     val eventContext = Purchase.context(purchase);
     if (purchase.clubcardPointsAward.isDefined) {

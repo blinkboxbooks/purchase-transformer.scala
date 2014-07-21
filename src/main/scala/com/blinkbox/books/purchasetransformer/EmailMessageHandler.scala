@@ -27,7 +27,7 @@ class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: Erro
   private val XmlDeclaration = """<?xml version="1.0" encoding="UTF-8"?>""" + "\n"
   private implicit val timeout = Timeout(retryInterval)
   
-  override def handleEvent(event: Event, originalSender: ActorRef) = 
+  override def handleEvent(event: Event, originalSender: ActorRef): Future[Unit] = 
     for (
       purchase <- Future(Purchase.fromXml(event.body.content));
       isbns = purchase.basketItems.map(_.isbn);
