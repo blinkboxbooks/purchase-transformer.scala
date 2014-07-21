@@ -23,6 +23,7 @@ class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: Erro
   routingId: String, templateName: String, retryInterval: FiniteDuration)
   extends ReliableEventHandler(errorHandler, retryInterval) {
 
+  // Scala's XML support doesn't include XML declarations.
   private val XmlDeclaration = """<?xml version="1.0" encoding="UTF-8"?>""" + "\n"
   private implicit val timeout = Timeout(retryInterval)
   

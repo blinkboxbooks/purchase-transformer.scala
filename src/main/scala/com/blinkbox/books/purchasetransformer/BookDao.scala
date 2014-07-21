@@ -13,11 +13,9 @@ import spray.http.HttpResponse
 import spray.http.StatusCodes
 import spray.httpx.RequestBuilding._
 
-//
 // NOTE! This client class for the book services is copied from the reporting service. 
 // There's also a Java book client in its own library.
-// We should ideally move to a new common Scala client lib... but if not, consider which other option to go for.
-//
+// We should ideally move to a new common Scala client library.
 
 /** Data classes for books. */
 case class BookList(offset: Int, count: Int, numberOfResults: Int, items: List[Book])
@@ -57,23 +55,23 @@ class HttpBookDao(httpActor: ActorRef, url: String)(
 
   override def getBooks(ids: Seq[String]): Future[BookList] = {
     if (ids.isEmpty) {
-      return Promise.failed(new BookException("No book IDs given")).future
+      Future.failed(new BookException("No book IDs given"))
+    } else {
+      (httpActor ? Get(url + "?" + queryParams(ids)))
+        .mapTo[HttpResponse]
+        .map(convertBookResponse(_))
     }
-    val request = Get(url + "?" + queryParams(ids))
-    (httpActor ? request)
-      .mapTo[HttpResponse]
-      .map(convertBookResponse(_))
   }
 
   private def convertBookResponse(response: HttpResponse): BookList = response match {
     case HttpResponse(StatusCodes.OK, entity, _, _) =>
       parse(response.entity.asString).extract[BookList]
-    case resp @ HttpResponse(status, entity, _, _) if (502 to 599).contains(status.intValue) => {
+    case res @ HttpResponse(status, entity, _, _) if (502 to 599).contains(status.intValue) => {
       val msg = s"HTTP response status indicating temporary failure: $status, content=${entity.asString take 1000} ..."
       logger.debug(msg)
       throw new IOException(msg)
     }
-    case resp @ HttpResponse(status, entity, _, _) => {
+    case res @ HttpResponse(status, entity, _, _) => {
       val msg = s"Unexpected HTTP response status: $status, content=${entity.asString take 1000} ..."
       logger.debug(msg)
       throw new BookException(msg)

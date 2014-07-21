@@ -35,6 +35,7 @@ class ClubcardMessageHandler(output: ActorRef, errorHandler: ErrorHandler, retry
     }
   }
 
+  // Move to common-messaging if we end up doing XSLT transforms in more services.
   private def transform(input: String): String = {
     val stylesheet = getClass.getResourceAsStream("/clubcard.listener.xsl")
     try {

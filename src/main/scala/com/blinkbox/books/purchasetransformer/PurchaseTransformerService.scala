@@ -25,6 +25,7 @@ object PurchaseTransformerService extends App with Configuration with Loggers {
 
   val log = LoggerFactory.getLogger(getClass)
 
+  // Originator ID for outgoing messages.
   val Originator = "purchase-transformer"
 
   val serviceConf = config.getConfig("service.purchaseTransformer")
