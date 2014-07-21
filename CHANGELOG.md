@@ -1,5 +1,16 @@
 # Change log
 
+## 0.1.2 ([#7](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/7) 2014-07-21 10:58:07)
+
+Updates to logging, libraries and a bit of polish.
+
+### Improvements
+
+- Move as much as possible of the configuration into reference.conf.
+- Update logging config to enable Graylog logging.
+- Updated upstream config, logging and messaging libraries and adjusted code to match.
+
+
 ## 0.1.1 ([#5](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/5) 2014-07-16 12:11:51)
 
 Acceptance tests
