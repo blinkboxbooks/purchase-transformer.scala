@@ -3,6 +3,7 @@ package com.blinkbox.books.purchasetransformer
 import akka.testkit.TestProbe
 import com.blinkbox.books.messaging._
 import java.io.ByteArrayInputStream
+import org.custommonkey.xmlunit.XMLUnit
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.verify
 import org.scalatest.Assertions._
@@ -10,7 +11,9 @@ import scala.xml.Node
 import scala.xml.Utility.trim
 import scala.xml.XML
 import scala.concurrent.duration._
+import org.custommonkey.xmlunit.XMLAssert
 
+/** Helper methods for creating "purchase complete" messages. */
 object TestMessages {
 
   val BaseIsbn = 122344566780L
@@ -22,9 +25,6 @@ object TestMessages {
 
   def isbn(id: Int) = BaseIsbn + id
   def isbns(ids: Int*) = ids.map(isbn(_).toString).toList
-
-  /** Parse string into a normalised XML representation that's convenient for comparisons. */
-  def xml(str: String) = trim(XML.load(new ByteArrayInputStream(str.getBytes("UTF-8"))))
 
   /** Create a purchase complete message based on a template. */
   def testMessage(numBooks: Int, numBillingProviders: Int,
@@ -51,7 +51,7 @@ object TestMessages {
         {
           for (providerNum <- 1 to numBillingProviders)
             yield <billingProvider>
-                    <name>{ if (providerNum == 1) "braintree" else "billing-provider-" + (providerNum  - 1) }</name>
+                    <name>{ if (providerNum == 1) "braintree" else "billing-provider-" + (providerNum - 1) }</name>
                     <region>UK</region>
                     <payment>
                       <amount>{ 12.0 / numBillingProviders }</amount>
@@ -80,16 +80,14 @@ object TestMessages {
       </basketItems>
     </p:purchase>
 
+  /** Check content of event published to the given actor against expected XML data. */
   def checkPublishedEvent(output: TestProbe, expectedContent: Node) {
     val event = output.receiveOne(1.second).asInstanceOf[Event]
 
-    // TODO: Horrible hack to get around weirdnesses in XML comparison in Scala.
-    // Would be nice to come up with a general solution for this. Just comparing the strings picks up insignificant
-    // differences e.g. orders of attributes. Comparing the XML elements directly avoids this but has other quirks
-    // that means it throws up differences where it shoudln't in some cases.
-    // (I recommend the comments in scala.xml.Equality for an impression of the issues involved - and a good laugh!).
-    assert(xml(event.body.asString) == expectedContent || xml(event.body.asString).toString == expectedContent.toString)
     assert(event.body.asString.contains("""<?xml version="1.0" encoding="UTF-8"?>"""), "Message should contain standard XML declaration")
+    XMLAssert.assertXMLEqual(normalisedXml(event.body.asString).toString, expectedContent.toString)
   }
+
+  private def normalisedXml(str: String) = trim(XML.load(new ByteArrayInputStream(str.getBytes("UTF-8"))))
 
 }

@@ -7,8 +7,13 @@ import scala.util.{ Try, Success, Failure }
 import scala.xml.{ XML, Node }
 import scala.xml.NodeSeq
 
+// Code to convert incoming message to case classes.
+// This kind of code should perhaps live in a separate library that can then be
+// used by both the publisher(s) and consumers of the messages. Ideally, alongside a schema
+// for the message.
+
 /**
- *  Value class for incoming purchase data.
+ * A Purchase Complete message as published by the payment service after customer has bought something.
  */
 case class Purchase(
   userId: String,

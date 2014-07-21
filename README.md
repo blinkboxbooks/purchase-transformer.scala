@@ -1,6 +1,6 @@
-# scala-purchase-transformer
+# Purchase Transformer service
 
-Scala implementation of processors for purchase messages. 
+Scala implementation of processors for purchase messages.
 
 This is intended to be functionally equivalent to the older Java purchase-complete service, with the main changes that:
 
