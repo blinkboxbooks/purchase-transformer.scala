@@ -41,6 +41,16 @@ Unrecoverable error cases include:
   * Variations: unknown host, known host but nothing listening on a port number, connecting OK initially but then dropping etc.
 * RabbitMQ is unavailable.
   * Variations: on startup, and after running for a while.
+* Combinations of failures, for example:
+  1. Run up the system as normal.
+  2. Kill the book service.
+  3. Push a large number of messages to the inbound email queue.
+  4. It should now retry a number of messages.
+  5. Kill RabbitMQ.
+  6. Restart book service.
+  7. It should now try to publish the in-flight messages that were being retried. These retry attempts should not block threads.
+  8. Restart RabbitMQ.
+  9. It should now redeliver everything successfully.
 
 
 ### Performance tests
