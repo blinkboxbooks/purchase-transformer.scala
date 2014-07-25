@@ -1,5 +1,16 @@
 # Change log
 
+## 0.1.3 ([#8](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/8) 2014-07-24 15:52:20)
+
+Don't block on publishing messages
+
+### Improvements
+
+- Updated to latest `rabbitmq-ha` library version.
+- Use RabbitMQ connection that doesn't retry channel operations on failure, to avoid potential blocking.
+- Updated configs for new RabbitMQ library version.
+
+
 ## 0.1.2 ([#7](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/7) 2014-07-21 10:58:07)
 
 Updates to logging, libraries and a bit of polish.
