@@ -32,10 +32,9 @@ object PurchaseTransformerService extends App with Configuration with Loggers {
 
   log.info(s"Starting purchase-transformer service with config: $serviceConf")
 
-  // Use separate connections for consumers and publishers.
-  def newConnection() = RabbitMq.reliableConnection(RabbitMqConfig(config))
-  val publisherConnection = newConnection()
-  val consumerConnection = newConnection()
+  // Use different connections for consumers and publishers.
+  val consumerConnection = RabbitMq.reliableConnection(RabbitMqConfig(config))
+  val publisherConnection = RabbitMq.recoveredConnection(RabbitMqConfig(config))
 
   private def publisher(config: Config, actorName: String) =
     system.actorOf(Props(new RabbitMqConfirmedPublisher(publisherConnection, PublisherConfiguration(config))), 
