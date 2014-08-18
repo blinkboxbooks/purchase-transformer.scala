@@ -4,6 +4,7 @@ require 'sinatra'
 require 'time'
 require 'wrong'
 require 'nokogiri'
+require 'hocon'
 require_relative 'mock_book_service'
 
 # Configure test properties
