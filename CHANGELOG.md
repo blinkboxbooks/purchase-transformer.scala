@@ -1,5 +1,12 @@
 # Change log
 
+## 0.1.4 ([#9](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/9) 2014-08-18 09:58:22)
+
+Test improvement - now configuring queues via HOCON reference.conf
+
+Test improvement
+Since the queue names changed and broke the tests, I thought I would read the config directly, so the tests don't break when queue names change.
+
 ## 0.1.3 ([#8](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/8) 2014-07-24 15:52:20)
 
 Don't block on publishing messages
