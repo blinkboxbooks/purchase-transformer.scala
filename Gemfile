@@ -15,4 +15,5 @@ group :development, :test do
   gem 'json'
   gem 'wrong'
   gem 'nokogiri'
+  gem 'hocon'
 end
