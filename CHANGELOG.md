@@ -1,5 +1,13 @@
 # Change log
 
+## 0.1.5 ([#10](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/10) 2014-10-23 16:27:00)
+
+Fixed Akka logging
+
+### Bugfix
+
+Akka log messages no longer goes to console ([CP-1996](http://jira.blinkbox.local/jira/browse/CP-1996))
+
 ## 0.1.4 ([#9](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/9) 2014-08-18 09:58:22)
 
 Test improvement - now configuring queues via HOCON reference.conf
