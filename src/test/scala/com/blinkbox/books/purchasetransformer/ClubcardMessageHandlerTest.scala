@@ -1,25 +1,21 @@
 package com.blinkbox.books.purchasetransformer
 
-import akka.actor.{ ActorRef, ActorSystem, Props }
-import akka.actor.Status.{ Success, Failure }
-import akka.testkit.{ ImplicitSender, TestKit }
+import akka.actor.Status.Success
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.blinkbox.books.messaging._
+import com.blinkbox.books.purchasetransformer.TestMessages._
 import org.junit.runner.RunWith
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers._
-import org.mockito.Matchers.{ eq => matcherEq }
+import org.mockito.Matchers.{eq => matcherEq, _}
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfter, FunSuiteLike}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.FunSuiteLike
 import org.xml.sax.SAXException
-import scala.concurrent.duration._
+
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.xml.Utility.trim
-import TestMessages._
-import akka.testkit.TestProbe
 
 @RunWith(classOf[JUnitRunner])
 class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender

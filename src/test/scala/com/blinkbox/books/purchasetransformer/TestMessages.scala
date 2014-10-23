@@ -1,17 +1,15 @@
 package com.blinkbox.books.purchasetransformer
 
+import java.io.ByteArrayInputStream
+
 import akka.testkit.TestProbe
 import com.blinkbox.books.messaging._
-import java.io.ByteArrayInputStream
-import org.custommonkey.xmlunit.XMLUnit
-import org.mockito.ArgumentCaptor
-import org.mockito.Mockito.verify
-import org.scalatest.Assertions._
-import scala.xml.Node
-import scala.xml.Utility.trim
-import scala.xml.XML
-import scala.concurrent.duration._
 import org.custommonkey.xmlunit.XMLAssert
+import org.scalatest.Assertions._
+
+import scala.concurrent.duration._
+import scala.xml.Utility.trim
+import scala.xml.{Node, XML}
 
 /** Helper methods for creating "purchase complete" messages. */
 object TestMessages {
@@ -82,7 +80,7 @@ object TestMessages {
 
   /** Check content of event published to the given actor against expected XML data. */
   def checkPublishedEvent(output: TestProbe, expectedContent: Node) {
-    val event = output.receiveOne(1.second).asInstanceOf[Event]
+    val event = output.receiveOne(3.second).asInstanceOf[Event]
 
     assert(event.body.asString.contains("""<?xml version="1.0" encoding="UTF-8"?>"""), "Message should contain standard XML declaration")
     XMLAssert.assertXMLEqual(normalisedXml(event.body.asString).toString, expectedContent.toString)
