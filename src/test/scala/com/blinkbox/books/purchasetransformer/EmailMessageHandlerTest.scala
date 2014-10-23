@@ -56,7 +56,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     val books = isbns(1, 2)
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! Event.xml(testMessage(2, 2, true).toString, eventHeader)
 
       // Check the message that came out the other end.
@@ -80,7 +80,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     val books = isbns(1)
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! Event.xml(testMessage(1, 1, false).toString, eventHeader)
       checkPublishedEvent(output, expectedEmailMessage(1, 1, false))
 
@@ -97,7 +97,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", TransactionDate, List())).toList)
     doReturn(Future.successful(books)).when(bookDao).getBooks(ids)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! Event.xml(testMessage(1, 1, true).toString, eventHeader)
       checkPublishedEvent(output, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
       
@@ -115,7 +115,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   test("Non-well-formed XML input") {
     val msg = Event.xml("Not valid XML", eventHeader)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! msg
       expectMsgType[Success]
 
@@ -127,7 +127,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   test("Well-formed XML that fails in conversion") {
     val msg = Event.xml("<p:purchase><invalid>Not the expected content</invalid></p:purchase>", eventHeader)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! msg
       expectMsgType[Success]
 
@@ -141,7 +141,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
 
     val msg = Event.xml(testMessage(0, 1, false).toString, eventHeader)
 
-    within(500.millis) {
+    within(5000.millis) {
       handler ! msg
       expectMsgType[Success]
 
