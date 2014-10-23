@@ -41,7 +41,7 @@ object PurchaseTransformerService extends App with Configuration with Loggers {
         name = actorName)
 
   // Initialise the actor system.
-  implicit val system = ActorSystem("purchase-transformer-service")
+  implicit val system = ActorSystem("purchase-transformer-service", config)
   implicit val ec = system.dispatcher
 
   // Could use the Java Book client library instead?
