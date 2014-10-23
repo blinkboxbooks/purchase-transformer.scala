@@ -14,7 +14,7 @@ val dependencySettings = Seq(
     val akkaV = "2.3.3"
     val sprayV = "1.3.1"
     Seq(
-    "com.blinkbox.books" %% "common-config"        % "0.7.0",
+    "com.blinkbox.books" %% "common-config"        % "1.4.1",
     "com.blinkbox.books" %% "common-messaging"     % "0.4.0",
     "com.blinkbox.books.hermes" %% "rabbitmq-ha"   % "4.1.0",
     "ch.qos.logback"      % "logback-classic"      % "1.1.2",
