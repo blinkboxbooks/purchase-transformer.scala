@@ -11,27 +11,19 @@ val buildSettings = Seq(
 
 val dependencySettings = Seq(
   libraryDependencies ++= {
-    val akkaV = "2.3.3"
-    val sprayV = "1.3.1"
+    val akkaV = "2.3.6"
+    val sprayV = "1.3.2"
     Seq(
     "com.blinkbox.books" %% "common-config"        % "1.4.1",
-    "com.blinkbox.books" %% "common-messaging"     % "0.4.0",
-    "com.blinkbox.books.hermes" %% "rabbitmq-ha"   % "4.1.0",
-    "ch.qos.logback"      % "logback-classic"      % "1.1.2",
-    "io.spray"            % "spray-client"         % sprayV,
-    "io.spray"            % "spray-http"           % sprayV,
-    "io.spray"            % "spray-httpx"          % sprayV,
-    "io.spray"           %% "spray-json"           % "1.2.6",
+    "com.blinkbox.books" %% "common-messaging"     % "1.1.5",
+    "com.blinkbox.books.hermes" %% "rabbitmq-ha"   % "7.1.0",
+    "com.blinkbox.books" %% "common-spray"         % "0.17.3",
+    "com.blinkbox.books" %% "common-scala-test"    % "0.3.0" % Test,
     "org.json4s"         %% "json4s-jackson"       % "3.2.10",
-    "org.scalatest"      %% "scalatest"            % "2.2.0" % "test",
-    "junit"               % "junit"                % "4.11" % "test",
-    "com.novocode"        % "junit-interface"      % "0.10" % "test",
-    "com.h2database"      % "h2"                   % "1.3.173" % "test",
-    "org.mockito"         % "mockito-core"         % "1.9.5" % "test",
-    "xmlunit"             % "xmlunit"              % "1.5" % "test",
+    "xmlunit"             % "xmlunit"              % "1.5" % Test,
     "com.typesafe.akka"  %% "akka-actor"           % akkaV,
     "com.typesafe.akka"  %% "akka-slf4j"           % akkaV,
-    "com.typesafe.akka"  %% "akka-testkit"         % akkaV % "test",
+    "com.typesafe.akka"  %% "akka-testkit"         % akkaV % Test,
     "joda-time"           % "joda-time"            % "2.3",
     "org.joda"            % "joda-convert"         % "1.6",
     "net.sf.saxon"        % "Saxon-HE"             % "9.5.1-5"

@@ -42,19 +42,19 @@ object Purchase {
    */
   def fromXml(xml: Array[Byte]): Purchase = {
     val purchase = XML.load(new ByteArrayInputStream(xml))
-    val basketId = purchase.value("basketId")
+    val basketId = purchase.stringValue("basketId")
     val basketItems = for (basketItem <- purchase \ "basketItems" \ "basketItem")
-      yield BasketItem(basketItem.value("isbn"),
+      yield BasketItem(basketItem.stringValue("isbn"),
       price(basketItem \ "salePrice"), price(basketItem \ "listPrice"))
 
-    Purchase(purchase.value("userId"), basketId, purchase.value("firstName"),
-      purchase.value("lastName"), purchase.value("email"),
-      purchase.optionalValue("clubcardNumber"), purchase.optionalValue("clubcardPointsAward").map(_.toInt),
+    Purchase(purchase.stringValue("userId"), basketId, purchase.stringValue("firstName"),
+      purchase.stringValue("lastName"), purchase.stringValue("email"),
+      purchase.stringValueOptional("clubcardNumber"), purchase.stringValueOptional("clubcardPointsAward").map(_.toInt),
       price(purchase \ "totalPrice"), basketItems)
   }
 
   private def price(priceNode: NodeSeq) =
-    Price(BigDecimal(priceNode.value("amount")), priceNode.value("currency"))
+    Price(BigDecimal(priceNode.stringValue("amount")), priceNode.stringValue("currency"))
 
   /** Get Event Context from fields of purchase message. */
   def context(purchase: Purchase) =

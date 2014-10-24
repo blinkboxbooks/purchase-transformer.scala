@@ -3,7 +3,7 @@ package com.blinkbox.books.purchasetransformer
 import akka.util.Timeout
 import akka.actor.ActorRef
 import akka.pattern.ask
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.slf4j.StrictLogging
 import java.io.IOException
 import org.json4s.jackson.JsonMethods._
 import org.json4s.NoTypeHints
@@ -49,7 +49,7 @@ trait BookDao {
  */
 class HttpBookDao(httpActor: ActorRef, url: String)(
   implicit val timeout: Timeout, implicit val ec: ExecutionContext)
-  extends BookDao with Logging {
+  extends BookDao with StrictLogging {
 
   implicit val formats = Serialization.formats(NoTypeHints)
 
