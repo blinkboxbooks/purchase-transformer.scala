@@ -1,5 +1,13 @@
 # Change log
 
+## 0.1.6 ([#11](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/11) 2014-10-23 16:57:52)
+
+Giving tests more time on slow build server & updating library dependencies
+
+### Bugfix
+
+More time for tests to finish
+
 ## 0.1.5 ([#10](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/10) 2014-10-23 16:27:00)
 
 Fixed Akka logging
