@@ -21,7 +21,7 @@ module KnowsAboutQueueHelpers
   # Initialize queues, exchanges and bindings. Passive identifies items already
   # created by the purchase-transformer itself.
   def initialize_exchanges
-    @purchase_complete_exchange = $amqp_ch.topic(@@clubcard_conf['input']['exchangeName'], durable: true)
+    @purchase_complete_exchange = $amqp_ch.fanout(@@clubcard_conf['input']['exchangeName'], durable: true, passive: true)
     @clubcard_collector_exchange = $amqp_ch.fanout(@@clubcard_conf['output']['exchangeName'], durable: true, passive: true)
     @mail_sender_exchange = $amqp_ch.fanout(@@email_conf['output']['exchangeName'], durable: true, passive: true)
   end
