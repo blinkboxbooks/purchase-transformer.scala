@@ -19,6 +19,28 @@ See the example [application.conf](src/main/resources/application.conf) file for
 
 Testing of the service should cover the following scenarios:
 
+
+### Running the cucumber tests
+
+Steps to run the tests against a local purchase-transformer. 
+
+#### Notes
+* purchase-transformer calls the catalogue-service but for the acceptance tests this is mocked using sinatra
+* The tests read in configuration from [reference.conf](src/main/resources/reference.conf)  
+
+#### Dependencies
+  1. Rabbit-MQ (can be configured in [environments.yml](features/support/config/environments.yml))
+
+First start the service:
+```
+$ sbt run
+```
+
+Then run the tests:
+```
+$ bundle exec cucumber
+```
+  
 ### Happy path
 
 * Check email message is sent for purchase complete message.
