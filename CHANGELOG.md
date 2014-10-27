@@ -1,5 +1,14 @@
 # Change log
 
+## 0.1.7 ([#12](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/12) 2014-10-24 12:29:46)
+
+Fix purchase transformer tests
+
+#### Test improvement
+* Tests were failing because they were trying to create a purchase complete exchange as topic, now it passively creates it as fanout (matches reference.conf)
+* Update deps
+* Add instructions to readme 
+
 ## 0.1.6 ([#11](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/11) 2014-10-23 16:57:52)
 
 Giving tests more time on slow build server & updating library dependencies
