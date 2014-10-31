@@ -8,7 +8,7 @@ import com.blinkbox.books.purchasetransformer.TestMessages._
 import org.junit.runner.RunWith
 import org.mockito.Matchers.{eq => matcherEq, _}
 import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfter, FunSuiteLike}
+import org.scalatest.FlatSpecLike
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.xml.sax.SAXException
@@ -19,22 +19,17 @@ import scala.xml.Utility.trim
 
 @RunWith(classOf[JUnitRunner])
 class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender
-  with FunSuiteLike with BeforeAndAfter with MockitoSugar {
-
-  private var errorHandler: ErrorHandler = _
-  private var output: TestProbe = _
-
-  private var handler: ActorRef = _
+  with FlatSpecLike with MockitoSugar {
 
   val retryInterval = 100.millis
   val eventHeader = EventHeader("test")
 
-  before {
-    output = TestProbe()
-    errorHandler = mock[ErrorHandler]
+  class TestFixture {
+    val output = TestProbe()
+    val errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Event], any[Throwable])
 
-    handler = system.actorOf(Props(
+    val handler = system.actorOf(Props(
       new ClubcardMessageHandler(output.ref, errorHandler, retryInterval)))
   }
 
@@ -42,7 +37,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   // Happy path.
   //
 
-  test("Send message with clubcard points") {
+  "A Clubcard message handler" should "Send message with clubcard points" in new TestFixture {
     within(5000.millis) {
       // Send test message to actor. 
       handler ! Event.xml(testMessage(2, 2, true).toString, eventHeader)
@@ -60,7 +55,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
     }
   }
 
-  test("Send message without clubcard points") {
+  it should "Send message without clubcard points" in new TestFixture {
     within(5000.millis) {
       handler ! Event.xml(testMessage(1, 1, false).toString, eventHeader)
       expectMsgType[Success]
@@ -88,7 +83,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
   // Failure scenarios.
   //
 
-  test("non-well-formed XML input") {
+  it should "handle non-well-formed XML input" in new TestFixture {
     val msg = Event.xml("Not valid XML", eventHeader)
 
     within(5000.millis) {
@@ -100,7 +95,7 @@ class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) wit
     }
   }
 
-  test("Well formed XML that can't be converted OK") {
+  it should "handle well formed XML that can't be converted" in new TestFixture {
     // Not sure if we can do this, given no schema for the input nor output?
     val msg = Event.xml("<not><the><right>XML</right></the></not>", eventHeader)
 

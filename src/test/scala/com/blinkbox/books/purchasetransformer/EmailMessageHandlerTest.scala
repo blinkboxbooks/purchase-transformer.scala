@@ -10,7 +10,6 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Matchers.{ eq => matcherEq }
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfter
 import org.scalatest.FlatSpecLike
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
@@ -26,7 +25,7 @@ import TestMessages._
  */
 @RunWith(classOf[JUnitRunner])
 class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender
-  with FlatSpecLike with BeforeAndAfter with MockitoSugar {
+  with FlatSpecLike with MockitoSugar {
 
   import EmailMessageHandlerTests._
 
