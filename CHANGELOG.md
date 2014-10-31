@@ -1,5 +1,14 @@
 # Change log
 
+## 0.1.8 ([#13](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/13) 2014-10-31 10:56:35)
+
+CP-1746: Fix intermittently failing unit tests
+
+### Bugfixes:
+
+- Refactored unit tests to remove potential for leaking state between test.
+
+
 ## 0.1.7 ([#12](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/12) 2014-10-24 12:29:46)
 
 Fix purchase transformer tests
