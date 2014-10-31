@@ -1,5 +1,14 @@
 # Change log
 
+## 0.1.9 ([#14](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/14) 2014-10-31 14:02:28)
+
+CP-1746: Fix unit tests
+
+### Improvements:
+
+- Avoid shared mutable state in tests.
+
+
 ## 0.1.8 ([#13](https://git.mobcastdev.com/Hermes/purchase-transformer/pull/13) 2014-10-31 10:56:35)
 
 CP-1746: Fix intermittently failing unit tests
