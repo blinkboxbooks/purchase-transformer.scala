@@ -31,6 +31,7 @@ val dependencySettings = Seq(
   }
 )
 
+parallelExecution in Test := false
 
 val publishSettings = Seq(
   mergeStrategy in assembly <<= (mergeStrategy in assembly) { old =>
