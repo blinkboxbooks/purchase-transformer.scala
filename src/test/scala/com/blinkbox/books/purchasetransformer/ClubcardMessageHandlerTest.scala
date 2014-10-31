@@ -8,7 +8,7 @@ import com.blinkbox.books.purchasetransformer.TestMessages._
 import org.junit.runner.RunWith
 import org.mockito.Matchers.{eq => matcherEq, _}
 import org.mockito.Mockito._
-import org.scalatest.FlatSpecLike
+import org.scalatest.FlatSpec
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.xml.sax.SAXException
@@ -18,13 +18,12 @@ import scala.concurrent.duration._
 import scala.xml.Utility.trim
 
 @RunWith(classOf[JUnitRunner])
-class ClubcardMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender
-  with FlatSpecLike with MockitoSugar {
+class ClubcardMessageHandlerTest extends FlatSpec with MockitoSugar {
 
   val retryInterval = 100.millis
   val eventHeader = EventHeader("test")
 
-  class TestFixture {
+  class TestFixture extends TestKit(ActorSystem("test-system")) with ImplicitSender {
     val output = TestProbe()
     val errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Event], any[Throwable])

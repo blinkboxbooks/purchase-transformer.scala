@@ -10,7 +10,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Matchers.{ eq => matcherEq }
 import org.mockito.Mockito._
-import org.scalatest.FlatSpecLike
+import org.scalatest.FlatSpec
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.xml.sax.SAXException
@@ -24,14 +24,13 @@ import TestMessages._
  * Tests that check the behaviour of the overall app, only mocking out RabbitMQ and external web services.
  */
 @RunWith(classOf[JUnitRunner])
-class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender
-  with FlatSpecLike with MockitoSugar {
+class EmailMessageHandlerTest extends FlatSpec with MockitoSugar {
 
   import EmailMessageHandlerTests._
 
   val eventHeader = EventHeader("test")
 
-  private class TestFixture {
+  private class TestFixture extends TestKit(ActorSystem("test-system")) with ImplicitSender {
 
     val bookDao = mock[BookDao]
     val output = TestProbe()
@@ -64,7 +63,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       checkPublishedEvent(output, expectedEmailMessage(2, 2, true))
 
       // Make the test probe that is the output send a Success notification back.
-      output.send(output.lastSender, Success())
+      output.send(output.lastSender, Success(()))
 
       // Check that we passed on the right parameters to the book client.
       verify(bookDao).getBooks(books)
@@ -85,7 +84,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       handler ! Event.xml(testMessage(1, 1, false).toString, eventHeader)
       checkPublishedEvent(output, expectedEmailMessage(1, 1, false))
 
-      output.send(output.lastSender, Success())
+      output.send(output.lastSender, Success(()))
       expectMsgType[Success]
 
       verifyNoMoreInteractions(errorHandler)
@@ -102,7 +101,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       handler ! Event.xml(testMessage(1, 1, true).toString, eventHeader)
       checkPublishedEvent(output, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
 
-      output.send(output.lastSender, Success())
+      output.send(output.lastSender, Success(()))
       expectMsgType[Success]
 
       verifyNoMoreInteractions(errorHandler)
