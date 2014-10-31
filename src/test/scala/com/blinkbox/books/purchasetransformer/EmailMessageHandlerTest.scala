@@ -11,7 +11,7 @@ import org.mockito.Matchers._
 import org.mockito.Matchers.{ eq => matcherEq }
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuiteLike
+import org.scalatest.FlatSpecLike
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.xml.sax.SAXException
@@ -26,33 +26,35 @@ import TestMessages._
  */
 @RunWith(classOf[JUnitRunner])
 class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with ImplicitSender
-  with FunSuiteLike with BeforeAndAfter with MockitoSugar {
+  with FlatSpecLike with BeforeAndAfter with MockitoSugar {
 
   import EmailMessageHandlerTests._
 
-  private var errorHandler: ErrorHandler = _
-  private var output: TestProbe = _
-  private var bookDao: BookDao = _
-
-  private var handler: ActorRef = _
-
   val eventHeader = EventHeader("test")
 
-  before {
-    bookDao = mock[BookDao]
-    output = TestProbe()
-    errorHandler = mock[ErrorHandler]
+  private class TestFixture {
+
+    val bookDao = mock[BookDao]
+    val output = TestProbe()
+    val errorHandler = mock[ErrorHandler]
     doReturn(Future.successful(())).when(errorHandler).handleError(any[Event], any[Throwable])
 
-    handler = system.actorOf(Props(
+    val handler = system.actorOf(Props(
       new EmailMessageHandler(bookDao, output.ref, errorHandler, routingId, templateName, retryInterval)))
+
+    def checkRecordedError[T <: Throwable](msg: Event)(implicit manifest: Manifest[T]): Unit = {
+      val expectedExceptionClass = manifest.runtimeClass.asInstanceOf[Class[T]]
+      val error = ArgumentCaptor.forClass(classOf[Exception])
+      verify(errorHandler).handleError(matcherEq(msg), error.capture)
+      assert(expectedExceptionClass.isAssignableFrom(error.getValue.getClass))
+    }
   }
 
   //
   // Happy path.
   //
 
-  test("Send message with all optional fields populated") {
+  "An email message handler" should "Send message with all optional fields populated" in new TestFixture {
     val books = isbns(1, 2)
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
@@ -76,7 +78,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     }
   }
 
-  test("Send message without optional fields") {
+  it should "Send message without optional fields" in new TestFixture {
     val books = isbns(1)
     doReturn(Future.successful(bookList(books))).when(bookDao).getBooks(books)
 
@@ -91,7 +93,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     }
   }
 
-  test("Book with no authors") {
+  it should "handle a book with no authors" in new TestFixture {
     val ids = isbns(1)
     val books = BookList(0, ids.size, ids.size,
       ids.map(isbn => Book(isbn, s"guid-$isbn", s"title-$isbn", TransactionDate, List())).toList)
@@ -100,10 +102,10 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     within(5000.millis) {
       handler ! Event.xml(testMessage(1, 1, true).toString, eventHeader)
       checkPublishedEvent(output, expectedEmailMessage(1, 1, clubcardPoints = true, knownAuthor = false))
-      
+
       output.send(output.lastSender, Success())
       expectMsgType[Success]
-      
+
       verifyNoMoreInteractions(errorHandler)
     }
   }
@@ -112,7 +114,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
   // Failure scenarios.
   //
 
-  test("Non-well-formed XML input") {
+  it should "pass on non-well-formed XML input to its error handler" in new TestFixture {
     val msg = Event.xml("Not valid XML", eventHeader)
 
     within(5000.millis) {
@@ -124,7 +126,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     }
   }
 
-  test("Well-formed XML that fails in conversion") {
+  it should "pass on well-formed XML that fails in conversion to error handler" in new TestFixture {
     val msg = Event.xml("<p:purchase><invalid>Not the expected content</invalid></p:purchase>", eventHeader)
 
     within(5000.millis) {
@@ -136,7 +138,7 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
     }
   }
 
-  test("Event with no books") {
+  it should "handle event with no books as an error" in new TestFixture {
     doReturn(Future.successful(bookList(List()))).when(bookDao).getBooks(any[Seq[String]])
 
     val msg = Event.xml(testMessage(0, 1, false).toString, eventHeader)
@@ -148,13 +150,6 @@ class EmailMessageHandlerTest extends TestKit(ActorSystem("test-system")) with I
       checkRecordedError[IllegalArgumentException](msg)
       verifyNoMoreInteractions(errorHandler)
     }
-  }
-
-  private def checkRecordedError[T <: Throwable](msg: Event)(implicit manifest: Manifest[T]): Unit = {
-    val expectedExceptionClass = manifest.runtimeClass.asInstanceOf[Class[T]]
-    val error = ArgumentCaptor.forClass(classOf[Exception])
-    verify(errorHandler).handleError(matcherEq(msg), error.capture)
-    assert(expectedExceptionClass.isAssignableFrom(error.getValue.getClass))
   }
 
 }
