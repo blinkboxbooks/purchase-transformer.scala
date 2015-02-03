@@ -1,7 +1,5 @@
-import AssemblyKeys._
-
 val buildSettings = Seq(
-  organization := "com.blinkbox.books.hermes",
+  organization := "com.blinkbox.books",
   name := "purchase-transformer",
   version := scala.util.Try(scala.io.Source.fromFile("VERSION").mkString.trim).getOrElse("0.0.0"),
   scalaVersion  := "2.10.4",
@@ -12,7 +10,6 @@ val buildSettings = Seq(
 val dependencySettings = Seq(
   libraryDependencies ++= {
     val akkaV = "2.3.6"
-    val sprayV = "1.3.2"
     Seq(
     "com.blinkbox.books" %% "common-config"        % "1.4.1",
     "com.blinkbox.books" %% "common-messaging"     % "1.1.5",
@@ -33,21 +30,6 @@ val dependencySettings = Seq(
 
 parallelExecution in Test := false
 
-val publishSettings = Seq(
-  mergeStrategy in assembly <<= (mergeStrategy in assembly) { old =>
-    {
-      case "application.conf" => MergeStrategy.discard
-      case x => old(x)
-    }
-  },
-  artifact in (Compile, assembly) ~= { art => art.copy(`classifier` = Some("assembly")) },
-  publishArtifact in (Compile, packageBin) := false,
-  publishArtifact in (Compile, packageDoc) := false,
-  publishArtifact in (Compile, packageSrc) := false 
-) ++ addArtifact(artifact in (Compile, assembly), assembly).settings
-
 val root = (project in file(".")).
-  settings(rpmPrepSettings: _*).
-  settings(publishSettings: _*).
   settings(buildSettings: _*).
   settings(dependencySettings: _*)

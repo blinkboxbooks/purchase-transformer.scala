@@ -91,4 +91,3 @@ class EmailMessageHandler(bookDao: BookDao, output: ActorRef, errorHandler: Erro
     book.links.headOption.map(_.title).getOrElse("")
 
 }
-
